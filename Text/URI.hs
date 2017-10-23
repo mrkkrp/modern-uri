@@ -12,9 +12,12 @@
 module Text.URI
   ( -- * Data types
     Plain (..)
+  , makeAbsolute
   , Normalized
   , normalize
-  , Scheme (..)
+  , Scheme
+  , mkScheme
+  , unScheme
   , Authority (..)
   , UserInfo (..)
   , Host

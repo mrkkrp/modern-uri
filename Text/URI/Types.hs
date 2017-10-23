@@ -11,106 +11,155 @@
 
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE RecordWildCards    #-}
 
 module Text.URI.Types
-  ( Plain (..)
-  , Normalized
-  , normalize
-  , Scheme (..)
+  ( URI (..)
+  , makeAbsolute
+  , Scheme
+  , mkScheme
+  , unScheme
+  , SchemeException (..)
   , Authority (..)
   , UserInfo (..)
   , Host
   , mkHost
   , unHost
+  , HostException (..)
   , PathPiece
   , mkPathPiece
   , unPathPiece
+  , PathPieceException (..)
   , QueryParam (..) )
 where
 
 import Control.Monad.Catch
+import Data.Char
 import Data.Data (Data)
-import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import GHC.Generics
+import qualified Data.Text as T
 
--- TODO Don't forget data and typeable here.
-
--- | Universal resource identifier (URI). We use 'Text' here because
+-- | Uniform resource identifier (URI) reference. We use 'Text' here because
 -- information is presented in human-readable form, i.e. percent-decoded,
--- and it may contain Unicode characters. When you render a 'URI' it's
--- percent-encoded and normalized as necessary for you.
+-- and thus it may contain Unicode characters.
 
-data Plain = Plain
-  { uriScheme    :: Scheme
+data URI = URI
+  { uriScheme :: Maybe Scheme
+    -- ^ URI scheme, if 'Nothing', then the URI reference is relative
   , uriAuthority :: Maybe Authority
-  , uriPath      :: Maybe (NonEmpty PathPiece)
-  , uriQuery     :: [QueryParam]
-  , uriFragment  :: Text
-  } deriving (Show, Eq, Ord, Generic) -- TODO Read
+    -- ^ 'Authority' component
+  , uriPath :: [PathPiece]
+    -- ^ Path
+  , uriQuery :: [QueryParam]
+    -- ^ Query parameters
+  , uriFragment :: Text
+    -- ^ Fragment, without @#@
+  } deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
--- |
+-- | Make a given 'Plain' URI reference absolute using the supplied 'Scheme'
+-- if necessary.
 
-newtype Normalized = Normalized Plain
-  deriving (Show, Eq, Ord, Generic)
+makeAbsolute :: Scheme -> URI -> URI
+makeAbsolute scheme URI {..} = URI
+  { uriScheme = pure (fromMaybe scheme uriScheme)
+  , .. }
 
--- |
+-- | URI scheme.
 
-normalize :: Plain -> Normalized
-normalize = undefined -- TODO
+newtype Scheme = Scheme Text
+  deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
--- | Registered URI schemes.
+-- | Lift a 'Text' value into 'Scheme'.
 
-data Scheme -- TODO extend this enumeration to support all registered
-     -- schemes as per https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
-  = SchemeData         -- ^ @data@
-  | SchemeFile         -- ^ @file@
-  | SchemeFtp          -- ^ @ftp@
-  | SchemeHttp         -- ^ @http@
-  | SchemeHttps        -- ^ @https@
-  | SchemeIrc          -- ^ @irc@
-  | SchemeMailto       -- ^ @mailto@
-  deriving (Show, Read, Eq, Ord, Bounded, Enum, Generic)
+mkScheme :: MonadThrow m => Text -> m Scheme
+mkScheme scheme =
+  case T.uncons scheme of
+    Nothing -> giveup
+    Just (h, r) ->
+      if isLetter h && isAscii h && T.all validSchemeChar r
+        then (return . Scheme . T.toLower) scheme
+        else giveup
+  where
+    giveup = throwM (SchemeException scheme)
+    validSchemeChar = undefined
+
+-- | Extract a 'Text' value representing normalized URI scheme.
+
+unScheme :: Scheme -> Text
+unScheme (Scheme scheme) = scheme
+
+-- | Exception that is thrown by 'mkScheme' when its argument is not a valid
+-- scheme.
+
+data SchemeException = SchemeException Text
+  deriving (Eq, Show, Typeable, Data, Generic)
+
+instance Exception SchemeException
 
 -- | Authority component of 'URI'.
 
 data Authority = Authority
-  { authUser :: Maybe UserInfo     -- ^ User name and password
-  , authHost :: Host               -- ^ Host
-  , authPort :: Word               -- ^ Port number
-  } deriving (Show, Eq, Ord, Generic) -- TODO Read
+  { authUser :: Maybe UserInfo -- ^ User name and password
+  , authHost :: Host           -- ^ Host
+  , authPort :: Maybe Word     -- ^ Port number
+  } deriving (Show, Eq, Ord, Data, Typeable, Generic)
+
+-- | User info as a combination of username and password.
 
 data UserInfo = UserInfo
-  { uiUsername :: Text
-  , uiPassword :: Text
-  } deriving (Show, Eq, Ord, Generic)
+  { uiUsername :: Text -- ^ Username FIXME
+  , uiPassword :: Text -- ^ Password FIXME
+  } deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
 -- | 'URI' host.
 
 newtype Host = Host Text
-  deriving (Show, Eq, Ord, Generic) -- TODO Read
+  deriving (Show, Eq, Ord, Data, Typeable, Generic)
+
+-- | Lift a 'Text' value into 'Host'.
 
 mkHost :: MonadThrow m => Text -> m Host
 mkHost = undefined -- TODO
 
-unHost :: Host -> Text
-unHost = undefined -- TODO
+-- | Extract a 'Text' value representing normalized host name.
 
--- |
+unHost :: Host -> Text
+unHost (Host host) = host
+
+-- | Exception that is thrown by 'mkHost' when its argument is not a valid
+-- host.
+
+data HostException = HostException Text
+  deriving (Eq, Show, Typeable, Data, Generic)
+
+instance Exception HostException
+
+-- | Path piece.
 
 newtype PathPiece = PathPiece Text
-  deriving (Show, Eq, Ord, Generic) -- TODO Read
+  deriving (Show, Eq, Ord, Data, Typeable, Generic)
+
+-- | Lift a 'Text' value into 'PathPiece'.
 
 mkPathPiece :: MonadThrow m => Text -> m PathPiece
 mkPathPiece = undefined -- TODO
 
-unPathPiece :: PathPiece -> Text
-unPathPiece = undefined -- TODO
+-- | Extract a 'Text' value representing path piece.
 
--- |
+unPathPiece :: PathPiece -> Text
+unPathPiece (PathPiece piece) = piece
+
+data PathPieceException = PathPieceException Text
+  deriving (Eq, Show, Typeable, Data, Generic)
+
+instance Exception PathPieceException
+
+-- | Query parameter either in the form of flag or as a pair key–value.
 
 data QueryParam
-  = QueryFlag Text
-  | QueryParam Text Text
-  deriving (Show, Eq, Ord, Generic, Data, Typeable)
+  = QueryFlag Text       -- ^ Flag parameter
+  | QueryParam Text Text -- ^ Key–value pair
+  deriving (Show, Eq, Ord, Data, Typeable, Generic)

@@ -10,12 +10,18 @@
 -- Random utilities, an internal module.
 
 module Text.URI.Utils
-  ( percentEscape )
+  ( percentDecode
+  , percentEncode )
 where
 
 import Data.Text (Text)
 
--- | Percent-escape given 'Text' value.
+-- | Percent-decode given 'Text' value.
 
-percentEscape :: Text -> Text
-percentEscape = undefined -- TODO
+percentDecode :: Text -> Text
+percentDecode = undefined -- TODO
+
+-- | Percent-encode given 'Text' value.
+
+percentEncode :: Text -> Text
+percentEncode = undefined -- TODO

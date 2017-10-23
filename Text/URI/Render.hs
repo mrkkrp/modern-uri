@@ -28,3 +28,5 @@ render = undefined -- TODO
 
 renderBs :: URI.Normalized -> ByteString
 renderBs = undefined -- TODO
+
+-- TODO also to builders
