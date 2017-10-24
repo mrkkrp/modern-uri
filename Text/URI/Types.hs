@@ -169,7 +169,8 @@ mkScheme = mkRText
 
 instance RLabel 'Scheme where
   rcheck     Proxy = ifMatches $ do
-    void letterChar
+    void . satisfy $ \x ->
+      isAscii x && isLetter x
     skipMany . satisfy $ \x ->
       isAscii x && isAlphaNum x || x == '+' || x == '-' || x == '.'
   rnormalize Proxy = T.toLower
