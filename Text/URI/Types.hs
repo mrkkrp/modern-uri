@@ -30,7 +30,8 @@ module Text.URI.Types
   , mkHost
   , mkUsername
   , mkPassword
-  , mkNonEmpty
+  , mkPathPiece
+  , mkQueryPiece
   , mkFragment
   , unRText
   , RTextException (..) )
@@ -64,7 +65,7 @@ data URI = URI
     -- ^ URI scheme, if 'Nothing', then the URI reference is relative
   , uriAuthority :: Maybe Authority
     -- ^ 'Authority' component
-  , uriPath :: [RText 'NonEmpty]
+  , uriPath :: [RText 'PathPiece]
     -- ^ Path
   , uriQuery :: [QueryParam]
     -- ^ Query parameters
@@ -104,9 +105,9 @@ data UserInfo = UserInfo
 -- value.
 
 data QueryParam
-  = QueryFlag (RText 'NonEmpty)
+  = QueryFlag (RText 'QueryPiece)
     -- ^ Flag parameter
-  | QueryParam (RText 'NonEmpty) (RText 'NonEmpty)
+  | QueryParam (RText 'QueryPiece) (RText 'QueryPiece)
     -- ^ Key–value pair
   deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
@@ -125,7 +126,8 @@ data RTextLabel
   | Host               -- ^ See 'mkHost'
   | Username           -- ^ See 'mkUsername'
   | Password           -- ^ See 'mkPassword'
-  | NonEmpty           -- ^ See 'mkNonEmpty'
+  | PathPiece          -- ^ See 'mkPathPiece'
+  | QueryPiece         -- ^ See 'mkQueryPiece'
   | Fragment           -- ^ See 'mkFragment'
   deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
@@ -137,9 +139,9 @@ data RTextLabel
 -- like 'mkScheme').
 
 class RLabel (l :: RTextLabel) where
-  rcheck :: Proxy l -> Text -> Bool
+  rcheck     :: Proxy l -> Text -> Bool
   rnormalize :: Proxy l -> Text -> Text
-  rlabel :: Proxy l -> RTextLabel
+  rlabel     :: Proxy l -> RTextLabel
 
 -- | Construct a refined text value.
 
@@ -166,16 +168,16 @@ mkScheme :: MonadThrow m => Text -> m (RText 'Scheme)
 mkScheme = mkRText
 
 instance RLabel 'Scheme where
-  rcheck Proxy = ifMatches $ do
+  rcheck     Proxy = ifMatches $ do
     void letterChar
     skipMany . satisfy $ \x ->
       isAscii x && isAlphaNum x || x == '+' || x == '-' || x == '.'
   rnormalize Proxy = T.toLower
-  rlabel Proxy = Scheme
+  rlabel     Proxy = Scheme
 
 -- | Lift a 'Text' value into @'RText' 'Host'@.
 --
--- The host subcomponent of authority is identified by an IP literal
+-- The host sub-component of authority is identified by an IP literal
 -- encapsulated within square brackets, an IPv4 address in dotted-decimal
 -- form, or a registered name.
 --
@@ -188,7 +190,7 @@ mkHost :: MonadThrow m => Text -> m (RText 'Host)
 mkHost = mkRText
 
 instance RLabel 'Host where
-  rcheck Proxy = ifMatches $
+  rcheck     Proxy = ifMatches $
     try ipLiteral <|> try ipv4Address <|> regName
     where
       ipLiteral = between (char '[') (char ']') $
@@ -215,39 +217,77 @@ instance RLabel 'Host where
         skipMany $ letterChar <|>
           (char '-' <* notFollowedBy eof)
   rnormalize Proxy = T.toLower
-  rlabel Proxy = Host
+  rlabel     Proxy = Host
+
+-- | Lift a 'Text' value into @'RText' 'Username'@.
+--
+-- This smart constructor does not perform any sort of normalization.
+--
+-- See also: <https://tools.ietf.org/html/rfc3986#section-3.2.1>
 
 mkUsername :: MonadThrow m => Text -> m (RText 'Username)
 mkUsername = mkRText
 
 instance RLabel 'Username where
-  rcheck Proxy = undefined -- FIXME
-  rnormalize Proxy = undefined -- FIXME
-  rlabel Proxy = Username
+  rcheck     Proxy = not . T.null
+  rnormalize Proxy = id
+  rlabel     Proxy = Username
+
+-- | Lift a 'Text' value into @'RText' 'Password'@.
+--
+-- This smart constructor does not perform any sort of normalization.
+--
+-- See also: <https://tools.ietf.org/html/rfc3986#section-3.2.1>
 
 mkPassword :: MonadThrow m => Text -> m (RText 'Password)
 mkPassword = mkRText
 
 instance RLabel 'Password where
-  rcheck Proxy = undefined -- FIXME
-  rnormalize Proxy = undefined -- FIXME
-  rlabel Proxy = Password
+  rcheck     Proxy = not . T.null
+  rnormalize Proxy = id
+  rlabel     Proxy = Password
 
-mkNonEmpty :: MonadThrow m => Text -> m (RText 'NonEmpty)
-mkNonEmpty = mkRText
+-- | Lift a 'Text' value into @'RText' 'PathPiece'@.
+--
+-- This smart constructor does not perform any sort of normalization.
+--
+-- See also: <https://tools.ietf.org/html/rfc3986#section-3.3>
 
-instance RLabel 'NonEmpty where
-  rcheck Proxy = undefined -- FIXME
-  rnormalize Proxy = undefined -- FIXME
-  rlabel Proxy = NonEmpty
+mkPathPiece :: MonadThrow m => Text -> m (RText 'PathPiece)
+mkPathPiece = mkRText
+
+instance RLabel 'PathPiece where
+  rcheck     Proxy = not . T.null
+  rnormalize Proxy = id
+  rlabel     Proxy = PathPiece
+
+-- | Lift a 'Text' value into @'RText 'QueryPiece'@.
+--
+-- This smart constructor does not perform any sort of normalization.
+--
+-- See also: <https://tools.ietf.org/html/rfc3986#section-3.4>
+
+mkQueryPiece :: MonadThrow m => Text -> m (RText 'QueryPiece)
+mkQueryPiece = mkRText
+
+instance RLabel 'QueryPiece where
+  rcheck     Proxy = not . T.null
+  rnormalize Proxy = id
+  rlabel     Proxy = QueryPiece
+
+-- | Lift a 'Text' value into @'RText' 'Fragment'@.
+--
+-- This smart constructor does not perform any sort of normalization.
+--
+-- See also: <https://tools.ietf.org/html/rfc3986#section-3.5>
 
 mkFragment :: MonadThrow m => Text -> m (RText 'Fragment)
 mkFragment = mkRText
 
 instance RLabel 'Fragment where
-  rcheck Proxy = undefined -- FIXME
-  rnormalize Proxy = undefined -- FIXME
-  rlabel Proxy = Fragment
+  rcheck     Proxy = const True
+  rnormalize Proxy = id
+  rlabel     Proxy = Fragment
 
 -- | Project a plain strict 'Text' value from refined @'RText' l@ value.
 
@@ -269,14 +309,22 @@ instance Exception RTextException where
 ----------------------------------------------------------------------------
 -- Parser helpers
 
+-- | Parser type we use in the helper parsers.
+
+type Parser = Parsec Void Text
+
 -- | Return 'True' if given parser can consume 'Text' in its entirety.
 
-ifMatches :: Parsec Void Text () -> Text -> Bool
+ifMatches :: Parser () -> Text -> Bool
 ifMatches p = isJust . parseMaybe p
 
-unreserved :: Parsec Void Text Char
-unreserved = satisfy $ \x ->
+-- | Parser for unreserved characters as per RFC3986.
+
+unreserved :: Parser Char
+unreserved = label "unreserved character" . satisfy $ \x ->
   isAlphaNum x || x == '-' || x == '.' || x == '_' || x == '~'
 
-subDelim :: Parsec Void Text Char
-subDelim = oneOf ("!$&'()*+,;=" :: String)
+-- | Match a sub-delimiter.
+
+subDelim :: Parser Char
+subDelim = label "sub-delimiter" $ oneOf ("!$&'()*+,;=" :: String)

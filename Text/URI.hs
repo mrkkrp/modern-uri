@@ -23,7 +23,8 @@ module Text.URI
   , mkHost
   , mkUsername
   , mkPassword
-  , mkNonEmpty
+  , mkPathPiece
+  , mkQueryPiece
   , mkFragment
   , unRText
   , RTextException (..)
