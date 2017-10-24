@@ -33,7 +33,9 @@ module Text.URI
   , parseBs
     -- * Rendering
   , render
-  , renderBs )
+  , render'
+  , renderBs
+  , renderBs' )
 where
 
 import Text.URI.Types

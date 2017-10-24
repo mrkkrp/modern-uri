@@ -11,22 +11,35 @@
 
 module Text.URI.Render
   ( render
-  , renderBs )
+  , render'
+  , renderBs
+  , renderBs' )
 where
 
 import Data.ByteString (ByteString)
 import Data.Text (Text)
-import qualified Text.URI.Types as URI
+import Text.URI.Types (URI)
+import qualified Data.ByteString.Lazy         as BL
+import qualified Data.ByteString.Lazy.Builder as BLB
+import qualified Data.Text.Lazy               as TL
+import qualified Data.Text.Lazy.Builder       as TLB
 
--- | Render a given 'URI.Normalized' value as strict 'Text'.
+-- | Render a given 'URI' value as strict 'Text'.
 
-render :: URI.URI -> Text
-render = undefined -- TODO
+render :: URI -> Text
+render = TL.toStrict . TLB.toLazyText . render'
 
--- | Similarly to 'render', render a given 'URI.Normalized' value as a
--- strict 'ByteString'.
+-- | Render a given 'URI' value as a 'TLB.Builder'.
 
-renderBs :: URI.URI -> ByteString
-renderBs = undefined -- TODO
+render' :: URI -> TLB.Builder
+render' = undefined -- TODO
 
--- TODO also to builders
+-- | Render a given 'URI.Normalized' value as a strict 'ByteString'.
+
+renderBs :: URI -> ByteString
+renderBs = BL.toStrict . BLB.toLazyByteString . renderBs'
+
+-- | Render a given 'URI' value as a 'BLB.Builder'.
+
+renderBs' :: URI -> BLB.Builder
+renderBs' = undefined -- TODO
