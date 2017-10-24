@@ -10,6 +10,7 @@
 -- Quasi-quoters for compile-time construction of URIs.
 
 {-# LANGUAGE CPP             #-}
+{-# LANGUAGE RankNTypes      #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Text.URI.QQ
@@ -27,7 +28,7 @@ import Data.Data (Data)
 import Data.Text (Text)
 import Data.Typeable (cast)
 import Language.Haskell.TH
-import Language.Haskell.TH.Quote
+import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import Language.Haskell.TH.Syntax (lift)
 import qualified Data.Text      as T
 import qualified Text.URI.Types as URI
@@ -85,9 +86,9 @@ liftToQQ f = QuasiQuoter
       case f (T.pack str) of
         Left err -> fail (displayException err)
         Right x  -> dataToExpQ (fmap liftText . cast) x
-  , quotePat  = error "This usage is not supported."
-  , quoteType = error "This usage is not supported."
-  , quoteDec  = error "This usage is not supported." }
+  , quotePat  = error "This usage is not supported"
+  , quoteType = error "This usage is not supported"
+  , quoteDec  = error "This usage is not supported" }
 
 -- | Lift strict 'T.Text' to @'Q' 'Exp'@.
 
