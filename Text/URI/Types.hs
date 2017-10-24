@@ -243,7 +243,7 @@ mkPassword :: MonadThrow m => Text -> m (RText 'Password)
 mkPassword = mkRText
 
 instance RLabel 'Password where
-  rcheck     Proxy = not . T.null
+  rcheck     Proxy = const True
   rnormalize Proxy = id
   rlabel     Proxy = Password
 
