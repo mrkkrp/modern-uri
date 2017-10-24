@@ -23,13 +23,13 @@ import qualified Text.URI.Types as URI
 
 -- | This parser can be used to parse URIs from strict 'Text'.
 
-parse :: MonadParsec e Text m => m URI.Plain
+parse :: MonadParsec e Text m => m URI.URI
 parse = undefined -- TODO
 {-# INLINEABLE parse #-}
 
 -- | Similarly to 'parse', this parser can be used to URIs from strict
 -- 'ByteString's.
 
-parseBs :: MonadParsec e ByteString m => m URI.Plain
+parseBs :: MonadParsec e ByteString m => m URI.URI
 parseBs = undefined -- TODO
 {-# INLINEABLE parseBs #-}

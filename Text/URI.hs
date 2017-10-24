@@ -11,22 +11,22 @@
 
 module Text.URI
   ( -- * Data types
-    Plain (..)
+    URI (..)
   , makeAbsolute
-  , Normalized
-  , normalize
-  , Scheme
-  , mkScheme
-  , unScheme
   , Authority (..)
   , UserInfo (..)
-  , Host
-  , mkHost
-  , unHost
-  , PathPiece
-  , mkPathPiece
-  , unPathPiece
   , QueryParam (..)
+    -- * Refined text
+  , RText
+  , RTextLabel (..)
+  , mkScheme
+  , mkHost
+  , mkUsername
+  , mkPassword
+  , mkNonEmpty
+  , mkFragment
+  , unRText
+  , RTextException (..)
     -- * Parsing
   , parse
   , parseBs

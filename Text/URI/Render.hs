@@ -20,13 +20,13 @@ import qualified Text.URI.Types as URI
 
 -- | Render a given 'URI.Normalized' value as strict 'Text'.
 
-render :: URI.Normalized -> Text
+render :: URI.URI -> Text
 render = undefined -- TODO
 
 -- | Similarly to 'render', render a given 'URI.Normalized' value as a
 -- strict 'ByteString'.
 
-renderBs :: URI.Normalized -> ByteString
+renderBs :: URI.URI -> ByteString
 renderBs = undefined -- TODO
 
 -- TODO also to builders
