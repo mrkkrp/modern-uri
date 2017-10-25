@@ -29,8 +29,11 @@ module Text.URI
   , unRText
   , RTextException (..)
     -- * Parsing
+  , Err (..)
+  , SumWithErr (..)
+  , ParseException (..)
+  , mkURI
   , parse
-  , parseBs
     -- * Rendering
   , render
   , render'

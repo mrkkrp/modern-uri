@@ -14,7 +14,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Text.URI.QQ
-  ( scheme
+  ( uri
+  , scheme
   , host
   , username
   , password
@@ -30,8 +31,9 @@ import Data.Typeable (cast)
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import Language.Haskell.TH.Syntax (lift)
-import qualified Data.Text      as T
-import qualified Text.URI.Types as URI
+import Text.URI.Parser
+import Text.URI.Types
+import qualified Data.Text as T
 
 #if MIN_VERSION_template_haskell(2,11,0)
 import Language.Haskell.TH.Syntax (dataToExpQ)
@@ -40,40 +42,45 @@ dataToExpQ :: Data a => (forall b. Data b => b -> Maybe (Q Exp)) -> a -> Q Exp
 dataToExpQ _ _ = fail "The feature requires at least GHC 8 to work"
 #endif
 
+-- | Construct a 'URI' value at compile time.
+
+uri :: QuasiQuoter
+uri = liftToQQ mkURI
+
 -- | Construct a @'RText' 'Scheme'@ value at compile time.
 
 scheme :: QuasiQuoter
-scheme = liftToQQ URI.mkScheme
+scheme = liftToQQ mkScheme
 
 -- | Construct a @'RText' 'Host'@ value at compile time.
 
 host :: QuasiQuoter
-host = liftToQQ URI.mkHost
+host = liftToQQ mkHost
 
 -- | Construct a @'RText' 'Username'@ value at compile time.
 
 username :: QuasiQuoter
-username = liftToQQ URI.mkUsername
+username = liftToQQ mkUsername
 
 -- | Construct a @'RText' 'Password'@ value at compile time.
 
 password :: QuasiQuoter
-password = liftToQQ URI.mkPassword
+password = liftToQQ mkPassword
 
 -- | Construct a @'RText' 'PathPiece'@ value at compile time.
 
 pathPiece :: QuasiQuoter
-pathPiece = liftToQQ URI.mkPathPiece
+pathPiece = liftToQQ mkPathPiece
 
 -- | Construct a @'RText' 'QueryPiece'@ value at compile time.
 
 queryPiece :: QuasiQuoter
-queryPiece = liftToQQ URI.mkQueryPiece
+queryPiece = liftToQQ mkQueryPiece
 
 -- | Construct a @'RText' 'Fragment'@ value at compile time.
 
 fragment :: QuasiQuoter
-fragment = liftToQQ URI.mkFragment
+fragment = liftToQQ mkFragment
 
 ----------------------------------------------------------------------------
 -- Helpers
