@@ -84,7 +84,7 @@ makeAbsolute scheme URI {..} = URI
 -- | Authority component of 'URI'.
 
 data Authority = Authority
-  { authUser :: Maybe UserInfo
+  { authUserInfo :: Maybe UserInfo
     -- ^ User information
   , authHost :: RText 'Host
     -- ^ Host

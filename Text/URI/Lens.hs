@@ -19,7 +19,7 @@ module Text.URI.Lens
   , uriPath
   , uriQuery
   , uriFragment
-  , authUser
+  , authUserInfo
   , authHost
   , authPort
   , uiUsername
@@ -60,10 +60,10 @@ uriQuery f s = (\x -> s { URI.uriQuery = x }) <$> f (URI.uriQuery s)
 uriFragment :: Lens' URI (Maybe (RText 'Fragment))
 uriFragment f s = (\x -> s { URI.uriFragment = x }) <$> f (URI.uriFragment s)
 
--- | 'Authority' user lens.
+-- | 'Authority' user info lens.
 
-authUser :: Lens' Authority (Maybe URI.UserInfo)
-authUser f s = (\x -> s { URI.authUser = x }) <$> f (URI.authUser s)
+authUserInfo :: Lens' Authority (Maybe URI.UserInfo)
+authUserInfo f s = (\x -> s { URI.authUserInfo = x }) <$> f (URI.authUserInfo s)
 
 -- | 'Authority' host lens.
 
