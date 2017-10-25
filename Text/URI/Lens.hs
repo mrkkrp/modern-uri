@@ -7,9 +7,10 @@
 -- Stability   :  experimental
 -- Portability :  portable
 --
--- Lenses for working with the 'URI.Plain' data type and its internals.
+-- Lenses for working with the 'URI' data type and its internals.
 
 {-# LANGUAGE DataKinds  #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Text.URI.Lens
@@ -23,14 +24,16 @@ module Text.URI.Lens
   , authPort
   , uiUsername
   , uiPassword
-  -- TODO the rest of the stuff
-  )
+  , queryFlag
+  , queryParam
+  , unRText )
 where
 
-import Text.URI.Types (URI, Authority, UserInfo, RText, RTextLabel (..))
+import Data.Functor.Contravariant
+import Data.Profunctor
+import Data.Text (Text)
+import Text.URI.Types (URI, Authority, UserInfo, QueryParam (..), RText, RTextLabel (..))
 import qualified Text.URI.Types as URI
-
-type Lens' s a = forall f. Functor f => (a -> f a) -> s -> f s
 
 -- | 'URI' scheme lens.
 
@@ -81,3 +84,51 @@ uiUsername f s = (\x -> s { URI.uiUsername = x }) <$> f (URI.uiUsername s)
 
 uiPassword :: Lens' UserInfo (RText 'Password)
 uiPassword f s = (\x -> s { URI.uiPassword = x }) <$> f (URI.uiPassword s)
+
+-- | 'QueryParam' prism for query flags.
+
+queryFlag :: Prism' URI.QueryParam (RText 'QueryPiece)
+queryFlag = prism' QueryFlag $ \case
+  QueryFlag x -> Just x
+  _           -> Nothing
+
+-- | 'QueryParam' prism for query parameters.
+
+queryParam :: Prism' QueryParam (RText 'QueryPiece, RText 'QueryPiece)
+queryParam = prism' construct pick
+  where
+    construct (x, y) = QueryParam x y
+    pick = \case
+      QueryParam x y -> Just (x, y)
+      _              -> Nothing
+
+-- | A getter that can project 'Text' from refined text values.
+
+unRText :: Getter (RText l) Text
+unRText = to URI.unRText
+
+----------------------------------------------------------------------------
+-- Helpers
+
+type Lens' s a =
+  forall f. Functor f => (a -> f a) -> s -> f s
+type Getter s a =
+  forall f. (Contravariant f, Functor f) => (a -> f a) -> s -> f s
+type Prism s t a b =
+  forall p f. (Choice p, Applicative f) => p a (f b) -> p s (f t)
+type Prism' s a = Prism s s a a
+
+-- | Build a 'Prism'.
+
+prism :: (b -> t) -> (s -> Either t a) -> Prism s t a b
+prism bt seta = dimap seta (either pure (fmap bt)) . right'
+
+-- | Another way to build a 'Prism'.
+
+prism' :: (b -> s) -> (s -> Maybe a) -> Prism s s a b
+prism' bs sma = prism bs (\s -> maybe (Left s) Right (sma s))
+
+-- | Lift a function into optic.
+
+to :: (Profunctor p, Contravariant f) => (s -> a) -> (p a (f a) -> p s (f s))
+to f = dimap f (contramap f)
