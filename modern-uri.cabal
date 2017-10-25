@@ -39,7 +39,6 @@ library
   other-modules:      Text.URI.Parser
                     , Text.URI.Render
                     , Text.URI.Types
-                    , Text.URI.Utils
   if flag(dev)
     ghc-options:      -Wall -Werror
   else
