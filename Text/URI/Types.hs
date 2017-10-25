@@ -97,7 +97,7 @@ data Authority = Authority
 data UserInfo = UserInfo
   { uiUsername :: RText 'Username
     -- ^ Username
-  , uiPassword :: RText 'Password
+  , uiPassword :: Maybe (RText 'Password)
     -- ^ Password
   } deriving (Show, Eq, Ord, Data, Typeable, Generic)
 

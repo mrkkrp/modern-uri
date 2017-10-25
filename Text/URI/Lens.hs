@@ -82,7 +82,7 @@ uiUsername f s = (\x -> s { URI.uiUsername = x }) <$> f (URI.uiUsername s)
 
 -- | 'UserInfo' password lens.
 
-uiPassword :: Lens' UserInfo (RText 'Password)
+uiPassword :: Lens' UserInfo (Maybe (RText 'Password))
 uiPassword f s = (\x -> s { URI.uiPassword = x }) <$> f (URI.uiPassword s)
 
 -- | 'QueryParam' prism for query flags.
