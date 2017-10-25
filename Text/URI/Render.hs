@@ -9,9 +9,11 @@
 --
 -- URI renders, an internal module.
 
+{-# LANGUAGE ConstraintKinds   #-}
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE RecordWildCards   #-}
 
 module Text.URI.Render
@@ -22,16 +24,25 @@ module Text.URI.Render
 where
 
 import Data.ByteString (ByteString)
+import Data.Char (chr, intToDigit)
 import Data.List (intersperse)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Monoid
+import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Word (Word8)
 import Text.URI.Types
+import qualified Data.ByteString              as B
 import qualified Data.ByteString.Lazy         as BL
 import qualified Data.ByteString.Lazy.Builder as BLB
+import qualified Data.Text                    as T
+import qualified Data.Text.Encoding           as TE
 import qualified Data.Text.Lazy               as TL
 import qualified Data.Text.Lazy.Builder       as TLB
 import qualified Data.Text.Lazy.Builder.Int   as TLB
+
+----------------------------------------------------------------------------
+-- High-level wrappers
 
 -- | Render a given 'URI' value as strict 'Text'.
 
@@ -41,47 +52,8 @@ render = TL.toStrict . TLB.toLazyText . render'
 -- | Render a given 'URI' value as a 'TLB.Builder'.
 
 render' :: URI -> TLB.Builder
-render' URI {..} = mconcat
-  [ rJust rScheme uriScheme
-  , rJust rAuthority uriAuthority
-  , rPath uriPath
-  , rQuery uriQuery
-  , rJust rFragment uriFragment ]
-
-rJust :: (a -> TLB.Builder) -> Maybe a -> TLB.Builder
-rJust = maybe mempty
-
-rScheme :: RText 'Scheme -> TLB.Builder
-rScheme = (<> ":") . TLB.fromText . unRText
-
-rAuthority :: Authority -> TLB.Builder
-rAuthority Authority {..} = mconcat
-  [ "//"
-  , rJust rUserInfo authUserInfo
-  , unRText' authHost
-  , rJust ((":" <>) . TLB.decimal) authPort ]
-
-rUserInfo :: UserInfo -> TLB.Builder
-rUserInfo UserInfo {..} = mconcat
-  [ unRText' uiUsername
-  , rJust ((":" <>) . unRText') uiPassword
-  , "@" ]
-
-rPath :: [RText 'PathPiece] -> TLB.Builder
-rPath ps = "/" <> mconcat (intersperse "/" (unRText' <$> ps))
-
-rQuery :: [QueryParam] -> TLB.Builder
-rQuery = \case
-  [] -> mempty
-  qs -> "?" <> mconcat (intersperse "&" (rQueryParam <$> qs))
-
-rQueryParam :: QueryParam -> TLB.Builder
-rQueryParam = \case
-  QueryFlag flag -> unRText' flag
-  QueryParam k v -> unRText' k <> "=" <> unRText' v
-
-rFragment :: RText 'Fragment -> TLB.Builder
-rFragment = (<> "#") . unRText'
+render' = genericRender TLB.decimal $
+  TLB.fromText . percentEncode . unRText
 
 -- | Render a given 'URI.Normalized' value as a strict 'ByteString'.
 
@@ -91,25 +63,90 @@ renderBs = BL.toStrict . BLB.toLazyByteString . renderBs'
 -- | Render a given 'URI' value as a 'BLB.Builder'.
 
 renderBs' :: URI -> BLB.Builder
-renderBs' = undefined -- TODO
+renderBs' = genericRender BLB.wordDec $
+  BLB.byteString . TE.encodeUtf8 . percentEncode . unRText
 
 ----------------------------------------------------------------------------
--- Helpers
+-- Generic render
 
-unRText' :: RText l -> TLB.Builder
-unRText' = TLB.fromText . percentEncode . unRText
+type Render a b = (forall l. RText l -> b) -> a -> b
+type R        b = (Monoid b, IsString b)
+
+genericRender :: R b => (Word -> b) -> Render URI b
+genericRender d r URI {..} = mconcat
+  [ rJust (rScheme r) uriScheme
+  , rJust (rAuthority d r) uriAuthority
+  , rPath r uriPath
+  , rQuery r uriQuery
+  , rJust (rFragment r) uriFragment ]
+
+rJust :: Monoid m => (a -> m) -> Maybe a -> m
+rJust = maybe mempty
+
+rScheme :: R b => Render (RText 'Scheme) b
+rScheme r = (<> ":") . r
+
+rAuthority :: R b => (Word -> b) -> Render Authority b
+rAuthority d r Authority {..} = mconcat
+  [ "//"
+  , rJust (rUserInfo r) authUserInfo
+  , r authHost
+  , rJust ((":" <>) . d) authPort ]
+
+rUserInfo :: R b => Render UserInfo b
+rUserInfo r UserInfo {..} = mconcat
+  [ r uiUsername
+  , rJust ((":" <>) . r) uiPassword
+  , "@" ]
+
+rPath :: R b => Render [RText 'PathPiece] b
+rPath r ps = "/" <> mconcat (intersperse "/" (r <$> ps))
+
+rQuery :: R b => Render [QueryParam] b
+rQuery r = \case
+  [] -> mempty
+  qs -> "?" <> mconcat (intersperse "&" (rQueryParam r <$> qs))
+
+rQueryParam :: R b => Render QueryParam b
+rQueryParam r = \case
+  QueryFlag flag -> r flag
+  QueryParam k v -> r k <> "=" <> r v
+
+rFragment :: R b => Render (RText 'Fragment) b
+rFragment r = (<> "#") . r
+
+----------------------------------------------------------------------------
+-- Percent-encoding
 
 -- | Percent-encode a 'Text' value.
 
 percentEncode :: Text -> Text
-percentEncode = id -- FIXME
+percentEncode txt = T.unfoldrN n f (bs, [])
+  where
+    f (bs', []) =
+      case B.uncons bs' of
+        Nothing -> Nothing
+        Just (w, bs'') -> Just $
+          if isUnreserved w
+            then (chr (fromIntegral w), (bs'', []))
+            else let c:|cs = encodeByte w
+                 in (c, (bs'', cs))
+    f (bs', x:xs) = Just (x, (bs', xs))
+    bs = TE.encodeUtf8 txt
+    n  = B.foldl' (\n' w -> g w + n') 0 bs
+    g x = if isUnreserved x then 1 else 3
+    encodeByte x = '%' :| [intToDigit h, intToDigit l]
+      where
+        (h, l) = fromIntegral x `quotRem` 16
 
 -- | The predicate selects unreserved bytes.
 
 isUnreserved :: Word8 -> Bool
-isUnreserved = \case
-  45  -> True
-  95  -> True
-  46  -> True
-  126 -> True
-  _   -> False
+isUnreserved x
+  | x >= 65 && x <= 90  = True -- 'A'..'Z'
+  | x >= 97 && x <= 122 = True -- 'a'..'z'
+  | x == 45             = True -- '-'
+  | x == 95             = True -- '_'
+  | x == 46             = True -- '.'
+  | x == 126            = True -- '~'
+  | otherwise           = False
