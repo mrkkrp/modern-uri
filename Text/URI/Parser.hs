@@ -69,7 +69,7 @@ parse = do
   uriScheme    <- optional (try pScheme)
   uriAuthority <- optional pAuthority
   uriPath      <- pPath (isNothing uriAuthority)
-  uriQuery     <- pQuery
+  uriQuery     <- option [] pQuery
   uriFragment  <- optional pFragment
   return URI {..}
 
