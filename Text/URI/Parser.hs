@@ -107,7 +107,7 @@ pPath hadNoAuth = do
   when (doubleSlash && hadNoAuth) $
     (unexpected . Tokens . NE.fromList) "//"
   path <- many . label "path character" $
-    pchar <|> satisfy (\x -> x /= '?' && x /= '#')
+    pchar <|> char '/'
   mapM (liftR mkPathPiece) (splitOn '/' path)
 
 pQuery :: MonadParsec e Text m => m [QueryParam]
