@@ -9,6 +9,7 @@
 --
 -- URI parsers, an internal module.
 
+{-# LANGUAGE CPP                #-}
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
@@ -28,7 +29,6 @@ import Control.Monad
 import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.Char
 import Data.Data (Data)
-import Data.List (span)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import Data.Typeable (Typeable)
@@ -43,6 +43,10 @@ import qualified Data.Set                   as E
 import qualified Data.Text                  as T
 import qualified Data.Text.Encoding         as TE
 import qualified Text.Megaparsec.Char.Lexer as L
+
+#if MIN_VERSION_base(4,9,0)
+import Data.List (span)
+#endif
 
 -- | Construct a 'URI' from 'Text'. In case of failure 'ParseException' is
 -- thrown.
