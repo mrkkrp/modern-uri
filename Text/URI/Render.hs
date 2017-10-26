@@ -145,6 +145,7 @@ isUnreserved :: Word8 -> Bool
 isUnreserved x
   | x >= 65 && x <= 90  = True -- 'A'..'Z'
   | x >= 97 && x <= 122 = True -- 'a'..'z'
+  | x >= 48 && x <= 57  = True -- '0'..'9'
   | x == 45             = True -- '-'
   | x == 95             = True -- '_'
   | x == 46             = True -- '.'
