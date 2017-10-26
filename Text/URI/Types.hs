@@ -12,6 +12,7 @@
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -35,7 +36,9 @@ module Text.URI.Types
   , mkQueryValue
   , mkFragment
   , unRText
-  , RTextException (..) )
+  , RTextException (..)
+    -- * Utils
+  , pHost )
 where
 
 import Control.Applicative
@@ -51,6 +54,8 @@ import Data.Void
 import GHC.Generics
 import Text.Megaparsec
 import Text.Megaparsec.Char
+import qualified Data.List.NonEmpty         as NE
+import qualified Data.Set                   as E
 import qualified Data.Text                  as T
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -196,32 +201,7 @@ mkHost :: MonadThrow m => Text -> m (RText 'Host)
 mkHost = mkRText
 
 instance RLabel 'Host where
-  rcheck     Proxy = ifMatches $
-    try ipLiteral <|> try ipv4Address <|> regName
-    where
-      ipLiteral = between (char '[') (char ']') $
-        try ipv6Address <|> ipvFuture
-      ipv4Address = do
-        n <- fmap length . flip sepBy1 (char '.') $ do
-          x <- L.decimal
-          guard (x < (256 :: Integer))
-        guard (n == 4)
-      ipv6Address = do
-        xs <- flip sepEndBy1 (char ':') $
-          count' 0 4 hexDigitChar <*  lookAhead (char ':')
-        let nskips  = length (filter null xs)
-            npieces = length xs
-        guard (nskips < 2)
-        guard (npieces == 8 || (nskips == 1 && npieces < 8))
-      ipvFuture = do
-        void (char 'v')
-        void hexDigitChar
-        void (char '.')
-        skipSome (unreserved <|> subDelim <|> char ':')
-      regName = void . flip sepBy1 (char '.') $ do
-        void letterChar
-        skipMany $ letterChar <|>
-          (char '-' <* notFollowedBy eof)
+  rcheck     Proxy = ifMatches (void pHost)
   rnormalize Proxy = T.toLower
   rlabel     Proxy = Host
 
@@ -329,22 +309,60 @@ instance Exception RTextException where
 ----------------------------------------------------------------------------
 -- Parser helpers
 
--- | Parser type we use in the helper parsers.
-
-type Parser = Parsec Void Text
-
 -- | Return 'True' if given parser can consume 'Text' in its entirety.
 
-ifMatches :: Parser () -> Text -> Bool
+ifMatches :: Parsec Void Text () -> Text -> Bool
 ifMatches p = isJust . parseMaybe p
 
 -- | Parser for unreserved characters as per RFC3986.
 
-unreserved :: Parser Char
+unreserved :: MonadParsec e Text m => m Char
 unreserved = label "unreserved character" . satisfy $ \x ->
   isAlphaNum x || x == '-' || x == '.' || x == '_' || x == '~'
 
 -- | Match a sub-delimiter.
 
-subDelim :: Parser Char
-subDelim = label "sub-delimiter" $ oneOf ("!$&'()*+,;=" :: String)
+subDelim :: MonadParsec e Text m => m Char
+subDelim = oneOf s <?> "sub-delimiter"
+  where
+    s = E.fromList "!$&'()*+,;="
+
+-- | Parser that can parse host names.
+
+pHost :: MonadParsec e Text m => m String
+pHost = T.unpack . fst <$>
+  match (try ipLiteral <|> try ipv4Address <|> regName)
+  where
+    ipLiteral = between (char '[') (char ']') $
+      try ipv6Address <|> ipvFuture
+    octet = do
+      pos       <- getNextTokenPosition
+      (toks, x) <- match L.decimal
+      when (x < (256 :: Integer)) $ do
+        mapM_ setPosition pos
+        -- NOTE 'toks' cannot be empty since 'decimal' has succeeded.
+        failure
+          (Just . Tokens . NE.fromList . T.unpack $ toks)
+          (E.singleton . Label . NE.fromList $ "decimal number from 0 to 255")
+    ipv4Address =
+      count 3 (octet <* char '.') *> octet
+    ipv6Address = do
+      pos        <- getNextTokenPosition
+      (toks, xs) <- match . flip sepEndBy1 (char ':') $
+        count' 0 4 hexDigitChar <*  lookAhead (char ':')
+      let nskips  = length (filter null xs)
+          npieces = length xs
+      unless (nskips < 2 && npieces == 8 || (nskips == 1 && npieces < 8)) $ do
+        mapM_ setPosition pos
+        failure
+          (Just . Tokens . NE.fromList . T.unpack $ toks)
+          (E.singleton . Label . NE.fromList $ "valid IPv6 address")
+    ipvFuture = do
+      void (char 'v')
+      void hexDigitChar
+      void (char '.')
+      skipSome (unreserved <|> subDelim <|> char ':')
+    regName = void . flip sepBy1 (char '.') $ do
+      void letterChar
+      let r = letterChar <|> (char '-' <* lookAhead r)
+      skipMany r

@@ -12,10 +12,12 @@
 module Text.URI
   ( -- * Data types
     URI (..)
+  , mkURI
   , makeAbsolute
   , Authority (..)
   , UserInfo (..)
   , QueryParam (..)
+  , ParseException (..)
     -- * Refined text
   , RText
   , RTextLabel (..)
@@ -30,10 +32,6 @@ module Text.URI
   , unRText
   , RTextException (..)
     -- * Parsing
-  , Err (..)
-  , SumWithErr (..)
-  , ParseException (..)
-  , mkURI
   , parse
     -- * Rendering
   , render
@@ -42,6 +40,6 @@ module Text.URI
   , renderBs' )
 where
 
-import Text.URI.Types
 import Text.URI.Parser
 import Text.URI.Render
+import Text.URI.Types
