@@ -20,7 +20,8 @@ module Text.URI.QQ
   , username
   , password
   , pathPiece
-  , queryPiece
+  , queryKey
+  , queryValue
   , fragment )
 where
 
@@ -72,10 +73,15 @@ password = liftToQQ mkPassword
 pathPiece :: QuasiQuoter
 pathPiece = liftToQQ mkPathPiece
 
--- | Construct a @'RText' 'QueryPiece'@ value at compile time.
+-- | Construct a @'RText' 'QueryKey'@ value at compile time.
 
-queryPiece :: QuasiQuoter
-queryPiece = liftToQQ mkQueryPiece
+queryKey :: QuasiQuoter
+queryKey = liftToQQ mkQueryKey
+
+-- | Construct a @'RText 'QueryValue'@ value at compile time.
+
+queryValue :: QuasiQuoter
+queryValue = liftToQQ mkQueryValue
 
 -- | Construct a @'RText' 'Fragment'@ value at compile time.
 

@@ -24,7 +24,8 @@ module Text.URI
   , mkUsername
   , mkPassword
   , mkPathPiece
-  , mkQueryPiece
+  , mkQueryKey
+  , mkQueryValue
   , mkFragment
   , unRText
   , RTextException (..)

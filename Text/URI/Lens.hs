@@ -87,14 +87,14 @@ uiPassword f s = (\x -> s { URI.uiPassword = x }) <$> f (URI.uiPassword s)
 
 -- | 'QueryParam' prism for query flags.
 
-queryFlag :: Prism' URI.QueryParam (RText 'QueryPiece)
+queryFlag :: Prism' URI.QueryParam (RText 'QueryKey)
 queryFlag = prism' QueryFlag $ \case
   QueryFlag x -> Just x
   _           -> Nothing
 
 -- | 'QueryParam' prism for query parameters.
 
-queryParam :: Prism' QueryParam (RText 'QueryPiece, RText 'QueryPiece)
+queryParam :: Prism' QueryParam (RText 'QueryKey, RText 'QueryValue)
 queryParam = prism' construct pick
   where
     construct (x, y) = QueryParam x y

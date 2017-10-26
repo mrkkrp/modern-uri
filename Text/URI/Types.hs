@@ -31,7 +31,8 @@ module Text.URI.Types
   , mkUsername
   , mkPassword
   , mkPathPiece
-  , mkQueryPiece
+  , mkQueryKey
+  , mkQueryValue
   , mkFragment
   , unRText
   , RTextException (..) )
@@ -105,9 +106,9 @@ data UserInfo = UserInfo
 -- value.
 
 data QueryParam
-  = QueryFlag (RText 'QueryPiece)
+  = QueryFlag (RText 'QueryKey)
     -- ^ Flag parameter
-  | QueryParam (RText 'QueryPiece) (RText 'QueryPiece)
+  | QueryParam (RText 'QueryKey) (RText 'QueryValue)
     -- ^ Key–value pair
   deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
@@ -127,7 +128,8 @@ data RTextLabel
   | Username           -- ^ See 'mkUsername'
   | Password           -- ^ See 'mkPassword'
   | PathPiece          -- ^ See 'mkPathPiece'
-  | QueryPiece         -- ^ See 'mkQueryPiece'
+  | QueryKey           -- ^ See 'mkQueryKey'
+  | QueryValue         -- ^ See 'mkQueryValue'
   | Fragment           -- ^ See 'mkFragment'
   deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
@@ -262,19 +264,33 @@ instance RLabel 'PathPiece where
   rnormalize Proxy = id
   rlabel     Proxy = PathPiece
 
--- | Lift a 'Text' value into @'RText 'QueryPiece'@.
+-- | Lift a 'Text' value into @'RText 'QueryKey'@.
 --
 -- This smart constructor does not perform any sort of normalization.
 --
 -- See also: <https://tools.ietf.org/html/rfc3986#section-3.4>
 
-mkQueryPiece :: MonadThrow m => Text -> m (RText 'QueryPiece)
-mkQueryPiece = mkRText
+mkQueryKey :: MonadThrow m => Text -> m (RText 'QueryKey)
+mkQueryKey = mkRText
 
-instance RLabel 'QueryPiece where
+instance RLabel 'QueryKey where
   rcheck     Proxy = not . T.null
   rnormalize Proxy = id
-  rlabel     Proxy = QueryPiece
+  rlabel     Proxy = QueryKey
+
+-- | Lift a 'Text' value into @'RText' 'QueryValue'@.
+--
+-- This smart constructor does not perform any sort of normalization.
+--
+-- See also: <https://tools.ietf.org/html/rfc3986#section-3.4>
+
+mkQueryValue :: MonadThrow m => Text -> m (RText 'QueryValue)
+mkQueryValue = mkRText
+
+instance RLabel 'QueryValue where
+  rcheck     Proxy = const True
+  rnormalize Proxy = id
+  rlabel     Proxy = QueryValue
 
 -- | Lift a 'Text' value into @'RText' 'Fragment'@.
 --
