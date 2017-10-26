@@ -13,6 +13,7 @@
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -46,12 +47,13 @@ import Control.Monad
 import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.Char
 import Data.Data (Data)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, fromJust)
 import Data.Proxy
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import Data.Void
 import GHC.Generics
+import Test.QuickCheck hiding (label)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Data.List.NonEmpty         as NE
@@ -79,6 +81,14 @@ data URI = URI
     -- ^ Fragment, without @#@
   } deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
+instance Arbitrary URI where
+  arbitrary = URI
+    <$> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+
 -- | Make a given 'URI' reference absolute using the supplied @'RText'
 -- 'Scheme'@ if necessary.
 
@@ -98,6 +108,12 @@ data Authority = Authority
     -- ^ Port number
   } deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
+instance Arbitrary Authority where
+  arbitrary = Authority
+    <$> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+
 -- | User info as a combination of username and password.
 
 data UserInfo = UserInfo
@@ -106,6 +122,11 @@ data UserInfo = UserInfo
   , uiPassword :: Maybe (RText 'Password)
     -- ^ Password
   } deriving (Show, Eq, Ord, Data, Typeable, Generic)
+
+instance Arbitrary UserInfo where
+  arbitrary = UserInfo
+    <$> arbitrary
+    <*> arbitrary
 
 -- | Query parameter either in the form of flag or as a pair of key and
 -- value.
@@ -116,6 +137,11 @@ data QueryParam
   | QueryParam (RText 'QueryKey) (RText 'QueryValue)
     -- ^ Key–value pair
   deriving (Show, Eq, Ord, Data, Typeable, Generic)
+
+instance Arbitrary QueryParam where
+  arbitrary = oneof
+    [ QueryFlag  <$> arbitrary
+    , QueryParam <$> arbitrary <*> arbitrary ]
 
 ----------------------------------------------------------------------------
 -- Refined text
@@ -186,6 +212,9 @@ instance RLabel 'Scheme where
   rnormalize Proxy = T.toLower
   rlabel     Proxy = Scheme
 
+instance Arbitrary (RText 'Scheme) where
+  arbitrary = undefined -- TODO
+
 -- | Lift a 'Text' value into @'RText' 'Host'@.
 --
 -- The host sub-component of authority is identified by an IP literal
@@ -205,6 +234,9 @@ instance RLabel 'Host where
   rnormalize Proxy = T.toLower
   rlabel     Proxy = Host
 
+instance Arbitrary (RText 'Host) where
+  arbitrary = undefined -- TODO
+
 -- | Lift a 'Text' value into @'RText' 'Username'@.
 --
 -- This smart constructor does not perform any sort of normalization.
@@ -218,6 +250,9 @@ instance RLabel 'Username where
   rcheck     Proxy = not . T.null
   rnormalize Proxy = id
   rlabel     Proxy = Username
+
+instance Arbitrary (RText 'Username) where
+  arbitrary = fromJust . mkUsername . T.pack <$> listOf1 arbitrary
 
 -- | Lift a 'Text' value into @'RText' 'Password'@.
 --
@@ -233,6 +268,9 @@ instance RLabel 'Password where
   rnormalize Proxy = id
   rlabel     Proxy = Password
 
+instance Arbitrary (RText 'Password) where
+  arbitrary = fromJust . mkPassword . T.pack <$> arbitrary
+
 -- | Lift a 'Text' value into @'RText' 'PathPiece'@.
 --
 -- This smart constructor does not perform any sort of normalization.
@@ -246,6 +284,9 @@ instance RLabel 'PathPiece where
   rcheck     Proxy = not . T.null
   rnormalize Proxy = id
   rlabel     Proxy = PathPiece
+
+instance Arbitrary (RText 'PathPiece) where
+  arbitrary = fromJust . mkPathPiece . T.pack <$> listOf1 arbitrary
 
 -- | Lift a 'Text' value into @'RText 'QueryKey'@.
 --
@@ -261,6 +302,9 @@ instance RLabel 'QueryKey where
   rnormalize Proxy = id
   rlabel     Proxy = QueryKey
 
+instance Arbitrary (RText 'QueryKey) where
+  arbitrary = fromJust . mkQueryKey . T.pack <$> listOf1 arbitrary
+
 -- | Lift a 'Text' value into @'RText' 'QueryValue'@.
 --
 -- This smart constructor does not perform any sort of normalization.
@@ -275,6 +319,9 @@ instance RLabel 'QueryValue where
   rnormalize Proxy = id
   rlabel     Proxy = QueryValue
 
+instance Arbitrary (RText 'QueryValue) where
+  arbitrary = fromJust . mkQueryValue . T.pack <$> arbitrary
+
 -- | Lift a 'Text' value into @'RText' 'Fragment'@.
 --
 -- This smart constructor does not perform any sort of normalization.
@@ -288,6 +335,9 @@ instance RLabel 'Fragment where
   rcheck     Proxy = const True
   rnormalize Proxy = id
   rlabel     Proxy = Fragment
+
+instance Arbitrary (RText 'Fragment) where
+  arbitrary = fromJust . mkFragment . T.pack <$> arbitrary
 
 -- | Project a plain strict 'Text' value from refined @'RText' l@ value.
 
