@@ -118,7 +118,10 @@ data QueryParam
 -- | Refined text labelled at the type level.
 
 newtype RText (l :: RTextLabel) = RText Text
-  deriving (Show, Eq, Ord, Data, Typeable, Generic)
+  deriving (Eq, Ord, Data, Typeable, Generic)
+
+instance Show (RText l) where
+  show (RText txt) = show txt
 
 -- | Refined text labels.
 
@@ -172,7 +175,7 @@ mkScheme = mkRText
 instance RLabel 'Scheme where
   rcheck     Proxy = ifMatches $ do
     void . satisfy $ \x ->
-      isAscii x && isLetter x
+      isAscii x && isAlpha x
     skipMany . satisfy $ \x ->
       isAscii x && isAlphaNum x || x == '+' || x == '-' || x == '.'
   rnormalize Proxy = T.toLower
