@@ -113,7 +113,7 @@ rQueryParam r = \case
   QueryParam k v -> r True k <> "=" <> r True v
 
 rFragment :: R b => Render (RText 'Fragment) b
-rFragment r = (<> "#") . r True
+rFragment r = ("#" <>) . r True
 
 ----------------------------------------------------------------------------
 -- Percent-encoding
