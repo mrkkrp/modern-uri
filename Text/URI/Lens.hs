@@ -24,12 +24,16 @@ module Text.URI.Lens
   , authPort
   , uiUsername
   , uiPassword
+  , _QueryFlag
+  , _QueryParam
   , queryFlag
   , queryParam
   , unRText )
 where
 
+import Data.Foldable (find)
 import Data.Functor.Contravariant
+import Data.Maybe (isJust)
 import Data.Profunctor
 import Data.Text (Text)
 import Text.URI.Types (URI, Authority, UserInfo, QueryParam (..), RText, RTextLabel (..))
@@ -87,20 +91,42 @@ uiPassword f s = (\x -> s { URI.uiPassword = x }) <$> f (URI.uiPassword s)
 
 -- | 'QueryParam' prism for query flags.
 
-queryFlag :: Prism' URI.QueryParam (RText 'QueryKey)
-queryFlag = prism' QueryFlag $ \case
+_QueryFlag :: Prism' URI.QueryParam (RText 'QueryKey)
+_QueryFlag = prism' QueryFlag $ \case
   QueryFlag x -> Just x
   _           -> Nothing
 
 -- | 'QueryParam' prism for query parameters.
 
-queryParam :: Prism' QueryParam (RText 'QueryKey, RText 'QueryValue)
-queryParam = prism' construct pick
+_QueryParam :: Prism' QueryParam (RText 'QueryKey, RText 'QueryValue)
+_QueryParam = prism' construct pick
   where
     construct (x, y) = QueryParam x y
     pick = \case
       QueryParam x y -> Just (x, y)
       _              -> Nothing
+
+-- | Check if the given query key is present in the collection of query
+-- parameters.
+
+queryFlag :: RText 'QueryKey -> Getter [URI.QueryParam] Bool
+queryFlag k = to (isJust . find g)
+  where
+    g (QueryFlag k') = k' == k
+    g _              = False
+
+-- | Manipulate a query parameter by its key. Note that since there may be
+-- several query parameters with the same key this is a traversal that can
+-- return\/modify several items at once.
+
+queryParam :: RText 'QueryKey -> Traversal' [URI.QueryParam] (RText 'QueryValue)
+queryParam k f s = go s
+  where
+    go []     = pure s
+    go (x:xs) =
+      case x of
+        QueryParam k' v -> if k == k' then f v *> go xs else go xs
+        _               -> go xs
 
 -- | A getter that can project 'Text' from refined text values.
 
@@ -112,6 +138,8 @@ unRText = to URI.unRText
 
 type Lens' s a =
   forall f. Functor f => (a -> f a) -> s -> f s
+type Traversal' s a =
+  forall f. Applicative f => (a -> f a) -> s -> f s
 type Getter s a =
   forall f. (Contravariant f, Functor f) => (a -> f a) -> s -> f s
 type Prism s t a b =
