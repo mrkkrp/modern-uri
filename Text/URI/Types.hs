@@ -340,9 +340,8 @@ pHost = T.unpack . fst <$>
       (toks, x) <- match L.decimal
       when (x < (256 :: Integer)) $ do
         mapM_ setPosition pos
-        -- NOTE 'toks' cannot be empty since 'decimal' has succeeded.
         failure
-          (Just . Tokens . NE.fromList . T.unpack $ toks)
+          (fmap Tokens . NE.nonEmpty . T.unpack $ toks)
           (E.singleton . Label . NE.fromList $ "decimal number from 0 to 255")
     ipv4Address =
       count 3 (octet <* char '.') *> octet
@@ -352,10 +351,10 @@ pHost = T.unpack . fst <$>
         count' 0 4 hexDigitChar <*  lookAhead (char ':')
       let nskips  = length (filter null xs)
           npieces = length xs
-      unless (nskips < 2 && npieces == 8 || (nskips == 1 && npieces < 8)) $ do
+      unless (nskips < 2 && (npieces == 8 || (nskips == 1 && npieces < 8))) $ do
         mapM_ setPosition pos
         failure
-          (Just . Tokens . NE.fromList . T.unpack $ toks)
+          (fmap Tokens . NE.nonEmpty . T.unpack $ toks)
           (E.singleton . Label . NE.fromList $ "valid IPv6 address")
     ipvFuture = do
       void (char 'v')
