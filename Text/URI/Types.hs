@@ -363,5 +363,5 @@ pHost = T.unpack . fst <$>
       skipSome (unreserved <|> subDelim <|> char ':')
     regName = void . flip sepBy1 (char '.') $ do
       void letterChar
-      let r = letterChar <|> (char '-' <* lookAhead r)
+      let r = letterChar <|> (char '-' <* lookAhead letterChar)
       skipMany r
