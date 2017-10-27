@@ -15,6 +15,7 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -47,12 +48,15 @@ import Control.Monad
 import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.Char
 import Data.Data (Data)
-import Data.Maybe (fromMaybe, isJust, fromJust)
+import Data.List (intercalate)
+import Data.Maybe (fromMaybe, isJust, fromJust, maybeToList)
 import Data.Proxy
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import Data.Void
+import Data.Word (Word8, Word16)
 import GHC.Generics
+import Numeric (showInt, showHex)
 import Test.QuickCheck hiding (label)
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -213,7 +217,7 @@ instance RLabel 'Scheme where
   rlabel     Proxy = Scheme
 
 instance Arbitrary (RText 'Scheme) where
-  arbitrary = undefined -- TODO
+  arbitrary = arbScheme
 
 -- | Lift a 'Text' value into @'RText' 'Host'@.
 --
@@ -235,7 +239,7 @@ instance RLabel 'Host where
   rlabel     Proxy = Host
 
 instance Arbitrary (RText 'Host) where
-  arbitrary = undefined -- TODO
+  arbitrary = arbHost
 
 -- | Lift a 'Text' value into @'RText' 'Username'@.
 --
@@ -252,7 +256,7 @@ instance RLabel 'Username where
   rlabel     Proxy = Username
 
 instance Arbitrary (RText 'Username) where
-  arbitrary = fromJust . mkUsername . T.pack <$> listOf1 arbitrary
+  arbitrary = arbText' mkUsername
 
 -- | Lift a 'Text' value into @'RText' 'Password'@.
 --
@@ -269,7 +273,7 @@ instance RLabel 'Password where
   rlabel     Proxy = Password
 
 instance Arbitrary (RText 'Password) where
-  arbitrary = fromJust . mkPassword . T.pack <$> arbitrary
+  arbitrary = arbText mkPassword
 
 -- | Lift a 'Text' value into @'RText' 'PathPiece'@.
 --
@@ -286,7 +290,7 @@ instance RLabel 'PathPiece where
   rlabel     Proxy = PathPiece
 
 instance Arbitrary (RText 'PathPiece) where
-  arbitrary = fromJust . mkPathPiece . T.pack <$> listOf1 arbitrary
+  arbitrary = arbText' mkPathPiece
 
 -- | Lift a 'Text' value into @'RText 'QueryKey'@.
 --
@@ -303,7 +307,7 @@ instance RLabel 'QueryKey where
   rlabel     Proxy = QueryKey
 
 instance Arbitrary (RText 'QueryKey) where
-  arbitrary = fromJust . mkQueryKey . T.pack <$> listOf1 arbitrary
+  arbitrary = arbText' mkQueryKey
 
 -- | Lift a 'Text' value into @'RText' 'QueryValue'@.
 --
@@ -320,7 +324,7 @@ instance RLabel 'QueryValue where
   rlabel     Proxy = QueryValue
 
 instance Arbitrary (RText 'QueryValue) where
-  arbitrary = fromJust . mkQueryValue . T.pack <$> arbitrary
+  arbitrary = arbText mkQueryValue
 
 -- | Lift a 'Text' value into @'RText' 'Fragment'@.
 --
@@ -337,7 +341,7 @@ instance RLabel 'Fragment where
   rlabel     Proxy = Fragment
 
 instance Arbitrary (RText 'Fragment) where
-  arbitrary = fromJust . mkFragment . T.pack <$> arbitrary
+  arbitrary = arbText mkFragment
 
 -- | Project a plain strict 'Text' value from refined @'RText' l@ value.
 
@@ -388,7 +392,7 @@ pHost = T.unpack . fst <$>
     octet = do
       pos       <- getNextTokenPosition
       (toks, x) <- match L.decimal
-      when (x < (256 :: Integer)) $ do
+      when (x >= (256 :: Integer)) $ do
         mapM_ setPosition pos
         failure
           (fmap Tokens . NE.nonEmpty . T.unpack $ toks)
@@ -397,8 +401,18 @@ pHost = T.unpack . fst <$>
       count 3 (octet <* char '.') *> octet
     ipv6Address = do
       pos        <- getNextTokenPosition
-      (toks, xs) <- match . flip sepEndBy1 (char ':') $
-        count' 0 4 hexDigitChar <*  lookAhead (char ':')
+      (toks, xs) <- match $ do
+        xs' <- maybeToList <$> optional ("" <$ string "::")
+        xs  <- flip sepBy1 (char ':') $ do
+          (skip, hasMore) <- lookAhead . hidden $ do
+            skip    <- option False (True <$ char ':')
+            hasMore <- option False (True <$ hexDigitChar)
+            return (skip, hasMore)
+          case (skip, hasMore) of
+            (True,  True)  -> return ""
+            (True,  False) -> "" <$ char ':'
+            (False, _)     -> count' 1 4 hexDigitChar
+        return (xs' ++ xs)
       let nskips  = length (filter null xs)
           npieces = length xs
       unless (nskips < 2 && (npieces == 8 || (nskips == 1 && npieces < 8))) $ do
@@ -412,6 +426,68 @@ pHost = T.unpack . fst <$>
       void (char '.')
       skipSome (unreserved <|> subDelim <|> char ':')
     regName = void . flip sepBy1 (char '.') $ do
-      void letterChar
-      let r = letterChar <|> (char '-' <* lookAhead letterChar)
+      void alphaNumChar
+      let r = alphaNumChar <|> try
+            (char '-' <* lookAhead (alphaNumChar <|> char '-'))
       skipMany r
+
+----------------------------------------------------------------------------
+-- Arbitrary helpers
+
+-- | Generator of 'Arbitrary' schemes.
+
+arbScheme :: Gen (RText 'Scheme)
+arbScheme = do
+  let g = oneof [choose ('a','z'), choose ('A','Z')]
+  x  <- g
+  xs <- listOf $
+    frequency [(3, g), (1, choose ('0','9'))]
+  return . fromJust . mkScheme . T.pack $ x:xs
+
+-- | Generator of 'Arbitrary' hosts.
+
+arbHost :: Gen (RText 'Host)
+arbHost = fromJust . mkHost . T.pack <$> frequency
+  [ (1, ipLiteral)
+  , (2, ipv4Address)
+  , (4, regName) ]
+  where
+    ipLiteral = do
+      xs <- oneof [ipv6Address, ipvFuture]
+      return ("[" ++ xs ++ "]")
+    ipv6Address =
+      -- NOTE We do not mess with zeroes here, because it's a hairy stuff.
+      -- We test how we handle :: thing manually in the test suite.
+      intercalate ":" . fmap (`showHex` "") <$>
+        vectorOf 8 (arbitrary :: Gen Word16)
+    ipv4Address =
+      intercalate "." . fmap (`showInt` "") <$>
+        vectorOf 4 (arbitrary :: Gen Word8)
+    ipvFuture = do
+      v  <- oneof [choose ('0', '9'), choose ('a', 'f')]
+      xs <- listOf1 $ frequency
+        [ (3, choose ('a', 'z'))
+        , (3, choose ('A', 'Z'))
+        , (2, choose ('0', '9'))
+        , (2, elements "-._~!$&'()*+,;=:") ]
+      return ("v" ++ [v] ++ "." ++ xs)
+    domainLabel = do
+      let g = arbitrary `suchThat` isAlphaNum
+      x  <- g
+      xs <- listOf $
+        frequency [(3, g), (1, return '-')]
+      x' <- g
+      return ([x] ++ xs ++ [x'])
+    regName = intercalate "." <$> resize 5 (listOf1 domainLabel)
+
+-- | Make generator for refined text given how to lift a possibly empty
+-- arbitrary 'Text' value into a refined type.
+
+arbText :: (Text -> Maybe (RText l)) -> Gen (RText l)
+arbText f = fromJust . f . T.pack <$> listOf arbitrary
+
+-- | Like 'arbText'', but the lifting function will be given non-empty
+-- arbitrary 'Text' value.
+
+arbText' :: (Text -> Maybe (RText l)) -> Gen (RText l)
+arbText' f = fromJust . f . T.pack <$> listOf1 arbitrary
