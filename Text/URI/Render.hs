@@ -69,7 +69,9 @@ renderBs' = genericRender BLB.wordDec $ \e ->
 ----------------------------------------------------------------------------
 -- Generic render
 
-type Render a b = (forall l. Bool -> RText l -> b) -> a -> b
+data Escaping = N | P | Q deriving (Eq)
+
+type Render a b = (forall l. Escaping -> RText l -> b) -> a -> b
 type R        b = (Monoid b, IsString b)
 
 genericRender :: R b => (Word -> b) -> Render URI b
@@ -84,23 +86,25 @@ rJust :: Monoid m => (a -> m) -> Maybe a -> m
 rJust = maybe mempty
 
 rScheme :: R b => Render (RText 'Scheme) b
-rScheme r = (<> ":") . r False
+rScheme r = (<> ":") . r Q
 
 rAuthority :: R b => (Word -> b) -> Render Authority b
 rAuthority d r Authority {..} = mconcat
   [ "//"
   , rJust (rUserInfo r) authUserInfo
-  , r False authHost
+  , if T.head (unRText authHost) == '['
+      then r N authHost
+      else r Q authHost
   , rJust ((":" <>) . d) authPort ]
 
 rUserInfo :: R b => Render UserInfo b
 rUserInfo r UserInfo {..} = mconcat
-  [ r False uiUsername
-  , rJust ((":" <>) . r False) uiPassword
+  [ r Q uiUsername
+  , rJust ((":" <>) . r Q) uiPassword
   , "@" ]
 
 rPath :: R b => Render [RText 'PathPiece] b
-rPath r ps = "/" <> mconcat (intersperse "/" (r True <$> ps))
+rPath r ps = "/" <> mconcat (intersperse "/" (r P <$> ps))
 
 rQuery :: R b => Render [QueryParam] b
 rQuery r = \case
@@ -109,11 +113,11 @@ rQuery r = \case
 
 rQueryParam :: R b => Render QueryParam b
 rQueryParam r = \case
-  QueryFlag flag -> r True flag
-  QueryParam k v -> r True k <> "=" <> r True v
+  QueryFlag flag -> r P flag
+  QueryParam k v -> r P k <> "=" <> r P v
 
 rFragment :: R b => Render (RText 'Fragment) b
-rFragment r = ("#" <>) . r True
+rFragment r = ("#" <>) . r P
 
 ----------------------------------------------------------------------------
 -- Percent-encoding
@@ -121,23 +125,24 @@ rFragment r = ("#" <>) . r True
 -- | Percent-encode a 'Text' value.
 
 percentEncode
-  :: Bool              -- ^ Whether to leave @':'@ and @'@'@ unescaped
+  :: Escaping          -- ^ Whether to leave @':'@ and @'@'@ unescaped
   -> Text              -- ^ Input text to encode
   -> Text              -- ^ Percent-encoded text
+percentEncode N txt = txt
 percentEncode e txt = T.unfoldrN n f (bs, [])
   where
     f (bs', []) =
       case B.uncons bs' of
         Nothing -> Nothing
         Just (w, bs'') -> Just $
-          if isUnreserved e w
+          if isUnreserved (e == P) w
             then (chr (fromIntegral w), (bs'', []))
             else let c:|cs = encodeByte w
                  in (c, (bs'', cs))
     f (bs', x:xs) = Just (x, (bs', xs))
     bs = TE.encodeUtf8 txt
     n  = B.foldl' (\n' w -> g w + n') 0 bs
-    g x = if isUnreserved e x then 1 else 3
+    g x = if isUnreserved (e == P) x then 1 else 3
     encodeByte x = '%' :| [intToDigit h, intToDigit l]
       where
         (h, l) = fromIntegral x `quotRem` 16

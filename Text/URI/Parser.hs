@@ -9,7 +9,6 @@
 --
 -- URI parsers, an internal module.
 
-{-# LANGUAGE CPP                #-}
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
@@ -42,10 +41,6 @@ import qualified Data.List.NonEmpty         as NE
 import qualified Data.Set                   as E
 import qualified Data.Text.Encoding         as TE
 import qualified Text.Megaparsec.Char.Lexer as L
-
-#if MIN_VERSION_base(4,9,0)
-import Data.List (span)
-#endif
 
 -- | Construct a 'URI' from 'Text'. In case of failure 'ParseException' is
 -- thrown.
@@ -93,14 +88,13 @@ pAuthority = do
 
 pUserInfo :: MonadParsec e Text m => m UserInfo
 pUserInfo = try $ do
-  uinfo <- many . label "user info character" $
-    unreservedChar <|> percentEncChar <|> subDelimChar <|> char ':'
-  let (username, pass) = span (/= ':') uinfo
-  uiUsername <- liftR mkUsername username
-  uiPassword <-
-    case pass of
-      ':':pass' -> Just <$> liftR mkPassword pass'
-      _         -> return Nothing
+  uiUsername <- label "username" $
+    many (unreservedChar <|> percentEncChar <|> subDelimChar)
+      >>= liftR mkUsername
+  uiPassword <- optional $ do
+    void (char ':')
+    many (unreservedChar <|> percentEncChar <|> subDelimChar <|> char ':')
+      >>= liftR mkPassword
   void (char '@')
   return UserInfo {..}
 
