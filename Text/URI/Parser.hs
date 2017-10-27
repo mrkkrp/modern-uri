@@ -29,7 +29,7 @@ import Control.Monad
 import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.Char
 import Data.Data (Data)
-import Data.Maybe (isNothing)
+import Data.Maybe (isNothing, catMaybes)
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import Data.Void
@@ -40,7 +40,6 @@ import Text.URI.Types
 import qualified Data.ByteString.Char8      as B8
 import qualified Data.List.NonEmpty         as NE
 import qualified Data.Set                   as E
-import qualified Data.Text                  as T
 import qualified Data.Text.Encoding         as TE
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -88,7 +87,7 @@ pAuthority :: MonadParsec e Text m => m Authority
 pAuthority = do
   void (string "//")
   authUserInfo <- optional pUserInfo
-  authHost <- pHost >>= liftR mkHost
+  authHost <- pHost True >>= liftR mkHost
   authPort <- optional (char ':' *> L.decimal)
   return Authority {..}
 
@@ -110,28 +109,23 @@ pPath hadNoAuth = do
   doubleSlash <- lookAhead (True <$ string "//" <|> pure False)
   when (doubleSlash && hadNoAuth) $
     (unexpected . Tokens . NE.fromList) "//"
-  path <- many . label "path character" $
-    pchar <|> char '/'
-  mapM (liftR mkPathPiece) (splitOn '/' path)
+  path <- flip sepBy (char '/') . label "path piece" $
+    many pchar
+  mapM (liftR mkPathPiece) (filter (not . null) path)
 
 pQuery :: MonadParsec e Text m => m [QueryParam]
 pQuery = do
   void (char '?')
-  query <- many . label "query character" $
-    pchar <|> char '/' <|> char '?'
-  mapM (liftR mkQueryParam) (splitOn '&' query)
-
-mkQueryParam :: MonadThrow m => Text -> m QueryParam
-mkQueryParam txt =
-  if T.null post
-    then QueryFlag <$> mkQueryKey pre
-    else do
-      k <- mkQueryKey pre
-      v <- mkQueryValue post
-      return (QueryParam k v)
-  where
-    (pre, post') = T.breakOn "=" txt
-    post         = T.drop 1 post'
+  fmap catMaybes . flip sepBy (char '&') . label "query parameter" $ do
+    let p = many (pchar' <|> char '/' <|> char '?')
+    k' <- p
+    mv <- optional (char '=' *> p)
+    k  <- liftR mkQueryKey k'
+    if null k'
+      then return Nothing
+      else Just <$> case mv of
+             Nothing -> return (QueryFlag k)
+             Just v  -> QueryParam k <$> liftR mkQueryValue v
 
 pFragment :: MonadParsec e Text m => m (RText 'Fragment)
 pFragment = do
@@ -179,24 +173,18 @@ pchar = choice
   , char ':'
   , char '@' ]
 
+pchar' :: MonadParsec e Text m => m Char
+pchar' = choice
+  [ unreservedChar
+  , percentEncChar
+  , oneOf s <?> "sub-delimiter"
+  , char ':'
+  , char '@' ]
+  where
+    s = E.fromList "!$'()*+,;"
+
 isAsciiAlpha :: Char -> Bool
 isAsciiAlpha x = isAscii x && isAlpha x
 
 isAsciiAlphaNum :: Char -> Bool
 isAsciiAlphaNum x = isAscii x && isAlphaNum x
-
-splitOn :: Eq a => a -> [a] -> [[a]]
-splitOn _ [] = []
-splitOn x xs =
-  if null pre
-    then splitOn x post
-    else pre : splitOn x post
-  where
-    (pre, post') = span (/= x) xs
-    post         =
-      case post' of
-        [] -> []
-        (w:ws) ->
-          if w == x
-            then ws
-            else post'

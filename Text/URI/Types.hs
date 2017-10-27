@@ -234,7 +234,7 @@ mkHost :: MonadThrow m => Text -> m (RText 'Host)
 mkHost = mkRText
 
 instance RLabel 'Host where
-  rcheck     Proxy = ifMatches (void pHost)
+  rcheck     Proxy = (ifMatches . void . pHost) False
   rnormalize Proxy = T.toLower
   rlabel     Proxy = Host
 
@@ -383,10 +383,16 @@ subDelim = oneOf s <?> "sub-delimiter"
 
 -- | Parser that can parse host names.
 
-pHost :: MonadParsec e Text m => m String
-pHost = T.unpack . fst <$>
-  match (try ipLiteral <|> try ipv4Address <|> regName)
+pHost :: MonadParsec e Text m
+  => Bool              -- ^ Demand percent-encoding in reg names
+  -> m String
+pHost pe = choice
+  [ try (asConsumed ipLiteral)
+  , try (asConsumed ipv4Address)
+  , regName ]
   where
+    asConsumed :: MonadParsec e Text m => m a -> m String
+    asConsumed p = T.unpack . fst <$> match p
     ipLiteral = between (char '[') (char ']') $
       try ipv6Address <|> ipvFuture
     octet = do
@@ -425,11 +431,23 @@ pHost = T.unpack . fst <$>
       void hexDigitChar
       void (char '.')
       skipSome (unreserved <|> subDelim <|> char ':')
-    regName = void . flip sepBy1 (char '.') $ do
-      void alphaNumChar
-      let r = alphaNumChar <|> try
-            (char '-' <* lookAhead (alphaNumChar <|> char '-'))
-      skipMany r
+    regName = fmap (intercalate ".") . flip sepBy1 (char '.') $ do
+      let ch =
+            if pe
+              then percentEncChar <|> alphaNumChar
+              else alphaNumChar
+      x <- ch
+      let r = ch <|> try
+            (char '-' <* (lookAhead . try) (ch <|> char '-'))
+      xs <- many r
+      return (x:xs)
+
+percentEncChar :: MonadParsec e Text m => m Char
+percentEncChar = do
+  void (char '%')
+  h <- digitToInt <$> hexDigitChar
+  l <- digitToInt <$> hexDigitChar
+  return . chr $ h * 16 + l
 
 ----------------------------------------------------------------------------
 -- Arbitrary helpers
