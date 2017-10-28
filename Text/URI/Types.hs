@@ -44,6 +44,7 @@ module Text.URI.Types
 where
 
 import Control.Applicative
+import Control.DeepSeq
 import Control.Monad
 import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.Char
@@ -93,6 +94,8 @@ instance Arbitrary URI where
     <*> arbitrary
     <*> arbitrary
 
+instance NFData URI
+
 -- | Make a given 'URI' reference absolute using the supplied @'RText'
 -- 'Scheme'@ if necessary.
 
@@ -118,6 +121,8 @@ instance Arbitrary Authority where
     <*> arbitrary
     <*> arbitrary
 
+instance NFData Authority
+
 -- | User info as a combination of username and password.
 
 data UserInfo = UserInfo
@@ -131,6 +136,8 @@ instance Arbitrary UserInfo where
   arbitrary = UserInfo
     <$> arbitrary
     <*> arbitrary
+
+instance NFData UserInfo
 
 -- | Query parameter either in the form of flag or as a pair of key and
 -- value.
@@ -147,6 +154,8 @@ instance Arbitrary QueryParam where
     [ QueryFlag  <$> arbitrary
     , QueryParam <$> arbitrary <*> arbitrary ]
 
+instance NFData QueryParam
+
 ----------------------------------------------------------------------------
 -- Refined text
 
@@ -157,6 +166,8 @@ newtype RText (l :: RTextLabel) = RText Text
 
 instance Show (RText l) where
   show (RText txt) = show txt
+
+instance NFData (RText l) where
 
 -- | Refined text labels.
 
