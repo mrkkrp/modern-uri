@@ -47,7 +47,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 mkURI :: MonadThrow m => Text -> m URI
 mkURI input =
-  case runParser (parse :: Parsec Void Text URI) "" input of
+  case runParser (parse <* eof :: Parsec Void Text URI) "" input of
     Left err -> throwM (ParseException input err)
     Right x  -> return x
 

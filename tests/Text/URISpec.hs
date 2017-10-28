@@ -7,6 +7,7 @@ import Data.Maybe (isNothing, isJust)
 import Data.Text (Text)
 import Data.Void
 import Test.Hspec
+import Test.Hspec.Megaparsec hiding (shouldParse)
 import Test.QuickCheck
 import Text.Megaparsec
 import Text.URI (URI (..), RTextException (..), RTextLabel (..))
@@ -18,8 +19,22 @@ instance Arbitrary Text where
 
 spec :: Spec
 spec = do
-  describe "mkURI" $
-    it "" pending -- TODO
+  describe "mkURI" $ do
+    it "accepts valid URIs" $ do
+      uri <- mkTestURI
+      URI.mkURI "https://mark:secret@github.com:443/mrkkrp/modern-uri?foo=bar#fragment"
+        `shouldReturn` uri
+    it "rejects invalid URIs" $ do
+      let e = err posI . mconcat $
+            [ utok 'ч'
+            , etok '#'
+            , etok '/'
+            , etoks "//"
+            , etok '?'
+            , elabel "ASCII alpha character"
+            , elabel "path piece"
+            , eeof ]
+      URI.mkURI "что-то" `shouldThrow` (== URI.ParseException "что-то" e)
   describe "makeAbsolute" $ do
     context "when given URI already has scheme" $
       it "returns that URI unchanged" $
@@ -113,13 +128,45 @@ spec = do
     it "parser and render are consistent" $
       property $ \uri ->
         shouldParse (URI.render uri) uri
-  -- TODO something nominal for rendering in text
-  -- TODO rendering of byte strings
-  -- TODO parser: various stuff, check corner cases
-  -- TODO parser: check parse errors
+  describe "parse" $
+    -- TODO parser: various stuff, check corner cases
+    -- TODO parser: check parse errors
+    it "" pending
+  describe "render" $
+    it "sort of works" $
+      fmap URI.render mkTestURI `shouldReturn`
+        "https://mark:secret@github.com:443/mrkkrp/modern-uri?foo=bar#fragment"
+  describe "renderBs" $
+    it "sort of works" $
+      fmap URI.renderBs mkTestURI `shouldReturn`
+        "https://mark:secret@github.com:443/mrkkrp/modern-uri?foo=bar#fragment"
 
 ----------------------------------------------------------------------------
 -- Helpers
+
+-- | Construct a test URI.
+
+mkTestURI :: IO URI
+mkTestURI = do
+  scheme   <- URI.mkScheme "https"
+  username <- URI.mkUsername "mark"
+  password <- URI.mkPassword "secret"
+  host     <- URI.mkHost "github.com"
+  path     <- mapM URI.mkPathPiece ["mrkkrp", "modern-uri"]
+  k        <- URI.mkQueryKey "foo"
+  v        <- URI.mkQueryValue "bar"
+  fragment <- URI.mkFragment "fragment"
+  return URI
+    { uriScheme = Just scheme
+    , uriAuthority = Just URI.Authority
+      { URI.authUserInfo = Just URI.UserInfo
+        { URI.uiUsername = username
+        , URI.uiPassword = Just password }
+      , URI.authHost = host
+      , URI.authPort = Just 443 }
+    , uriPath = path
+    , uriQuery = [URI.QueryParam k v]
+    , uriFragment = Just fragment }
 
 -- | Expect that the given action constructs 'URI.RText' with certain text
 -- inside.
