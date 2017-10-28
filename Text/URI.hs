@@ -7,7 +7,9 @@
 -- Stability   :  experimental
 -- Portability :  portable
 --
--- This is modern library for working with URIs.
+-- This is modern library for working with URIs as per RFC 3986:
+--
+-- <https://tools.ietf.org/html/rfc3986>
 --
 -- This module is intended to be imported qualified, e.g.:
 --

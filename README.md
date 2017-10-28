@@ -7,7 +7,9 @@
 [![Build Status](https://travis-ci.org/mrkkrp/modern-uri.svg?branch=master)](https://travis-ci.org/mrkkrp/modern-uri)
 [![Coverage Status](https://coveralls.io/repos/mrkkrp/modern-uri/badge.svg?branch=master&service=github)](https://coveralls.io/github/mrkkrp/modern-uri?branch=master)
 
-This is a modern library for working with URIs in Haskell.
+This is a modern library for working with URIs in Haskell as per RFC 3986:
+
+https://tools.ietf.org/html/rfc3986
 
 ## Motivation
 
