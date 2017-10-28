@@ -32,7 +32,7 @@ module Text.URI
   , unRText
   , RTextException (..)
     -- * Parsing
-  , parse
+  , parser
     -- * Rendering
   , render
   , render'

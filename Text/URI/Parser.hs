@@ -19,7 +19,7 @@
 
 module Text.URI.Parser
   ( mkURI
-  , parse
+  , parser
   , ParseException (..) )
 where
 
@@ -33,7 +33,7 @@ import Data.Text (Text)
 import Data.Typeable (Typeable)
 import Data.Void
 import GHC.Generics
-import Text.Megaparsec hiding (parse)
+import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.URI.Types
 import qualified Data.ByteString.Char8      as B8
@@ -47,7 +47,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 mkURI :: MonadThrow m => Text -> m URI
 mkURI input =
-  case runParser (parse <* eof :: Parsec Void Text URI) "" input of
+  case runParser (parser <* eof :: Parsec Void Text URI) "" input of
     Left err -> throwM (ParseException input err)
     Right x  -> return x
 
@@ -62,8 +62,8 @@ instance Exception ParseException where
 
 -- | This parser can be used to parse 'URI' from strict 'Text'.
 
-parse :: MonadParsec e Text m => m URI
-parse = do
+parser :: MonadParsec e Text m => m URI
+parser = do
   uriScheme    <- optional (try pScheme)
   uriAuthority <- optional pAuthority
   uriPath      <- pPath (isNothing uriAuthority)

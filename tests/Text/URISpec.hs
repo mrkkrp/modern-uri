@@ -7,7 +7,7 @@ import Data.Maybe (isNothing, isJust)
 import Data.Text (Text)
 import Data.Void
 import Test.Hspec
-import Test.Hspec.Megaparsec hiding (shouldParse)
+import Test.Hspec.Megaparsec
 import Test.QuickCheck
 import Text.Megaparsec
 import Text.URI (URI (..), RTextException (..), RTextLabel (..))
@@ -127,11 +127,36 @@ spec = do
   describe "parse and render" $
     it "parser and render are consistent" $
       property $ \uri ->
-        shouldParse (URI.render uri) uri
-  describe "parse" $
-    -- TODO parser: various stuff, check corner cases
-    -- TODO parser: check parse errors
-    it "" pending
+        shouldParse' (URI.render uri) uri
+  describe "parse" $ do
+    it "rejects Unicode in scheme" $
+      parse urip "" "что:something" `shouldFailWith` err posI (mconcat
+        [ utok 'ч'
+        , etok '#'
+        , etok '/'
+        , etoks "//"
+        , etok '?'
+        , elabel "ASCII alpha character"
+        , elabel "path piece"
+        , eeof ] )
+    it "rejects Unicode in host" $ do
+      let s = "https://юникод.рф"
+      parse urip "" s `shouldFailWith` err (posN 8 s) (mconcat
+        [ utok 'ю'
+        , etok '%'
+        , etok '['
+        , elabel "ASCII alpha-numeric character"
+        , elabel "integer"
+        , elabel "username" ] )
+    it "rejects Unicode in path" $ do
+      let s = "https://github.com/марк"
+      parse urip "" s `shouldFailWith` err (posN 19 s) (mconcat
+        [ utok 'м'
+        , etok '#'
+        , etok '/'
+        , etok '?'
+        , elabel "path piece"
+        , eeof ] )
   describe "render" $
     it "sort of works" $
       fmap URI.render mkTestURI `shouldReturn`
@@ -168,6 +193,11 @@ mkTestURI = do
     , uriQuery = [URI.QueryParam k v]
     , uriFragment = Just fragment }
 
+-- | A utility wrapper around 'URI.parser'.
+
+urip :: Parsec Void Text URI
+urip = URI.parser <* eof
+
 -- | Expect that the given action constructs 'URI.RText' with certain text
 -- inside.
 
@@ -182,12 +212,12 @@ shouldRText rtext txt = do
 -- | Expect that the specified input for parser will produce 'URI' equal to
 -- a given one.
 
-shouldParse
+shouldParse'
   :: Text              -- ^ Parser input
   -> URI               -- ^ 'URI' to compare with
   -> Expectation
-shouldParse s a =
-  case runParser (URI.parse :: Parsec Void Text URI) "" s of
+shouldParse' s a =
+  case runParser urip "" s of
     Left e -> expectationFailure $
       "the parser is expected to succeed, but it failed with:\n" ++
       parseErrorPretty' s e

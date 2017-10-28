@@ -434,13 +434,18 @@ pHost pe = choice
     regName = fmap (intercalate ".") . flip sepBy1 (char '.') $ do
       let ch =
             if pe
-              then percentEncChar <|> alphaNumChar
+              then percentEncChar <|> asciiAlphaNumChar
               else alphaNumChar
       x <- ch
       let r = ch <|> try
             (char '-' <* (lookAhead . try) (ch <|> char '-'))
       xs <- many r
       return (x:xs)
+
+asciiAlphaNumChar :: MonadParsec e Text m => m Char
+asciiAlphaNumChar = satisfy f <?> "ASCII alpha-numeric character"
+  where
+    f x = isAscii x && isAlphaNum x
 
 percentEncChar :: MonadParsec e Text m => m Char
 percentEncChar = do
