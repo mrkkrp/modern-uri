@@ -44,6 +44,9 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 -- | Construct a 'URI' from 'Text'. In case of failure 'ParseException' is
 -- thrown.
+--
+-- This function uses the 'parser' parser under the hood, which you can also
+-- use directly in a Megaparsec parser.
 
 mkURI :: MonadThrow m => Text -> m URI
 mkURI input =
@@ -55,6 +58,7 @@ mkURI input =
 -- parsed as a 'URI'.
 
 data ParseException = ParseException Text (ParseError Char Void)
+  -- ^ Arguments are: original input and parse error
   deriving (Show, Eq, Data, Typeable, Generic)
 
 instance Exception ParseException where

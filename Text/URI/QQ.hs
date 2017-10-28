@@ -7,7 +7,8 @@
 -- Stability   :  experimental
 -- Portability :  portable
 --
--- Quasi-quoters for compile-time construction of URIs.
+-- Quasi-quoters for compile-time construction of URIs and refined text
+-- values.
 
 {-# LANGUAGE CPP             #-}
 {-# LANGUAGE RankNTypes      #-}

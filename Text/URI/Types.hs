@@ -70,7 +70,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 -- Data types
 
 -- | Uniform resource identifier (URI) reference. We use refined 'Text'
--- (@'RText' @l) here because information is presented in human-readable
+-- (@'RText' l@) here because information is presented in human-readable
 -- form, i.e. percent-decoded, and thus it may contain Unicode characters.
 
 data URI = URI
@@ -129,7 +129,8 @@ data UserInfo = UserInfo
   { uiUsername :: RText 'Username
     -- ^ Username
   , uiPassword :: Maybe (RText 'Password)
-    -- ^ Password
+    -- ^ Password, 'Nothing' means that there was no @:@ character in the
+    -- user info string
   } deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
 instance Arbitrary UserInfo where
@@ -140,7 +141,7 @@ instance Arbitrary UserInfo where
 instance NFData UserInfo
 
 -- | Query parameter either in the form of flag or as a pair of key and
--- value.
+-- value. A key cannot be empty, while a value can.
 
 data QueryParam
   = QueryFlag (RText 'QueryKey)
@@ -354,7 +355,7 @@ instance RLabel 'Fragment where
 instance Arbitrary (RText 'Fragment) where
   arbitrary = arbText mkFragment
 
--- | Project a plain strict 'Text' value from refined @'RText' l@ value.
+-- | Project a plain strict 'Text' value from a refined @'RText' l@ value.
 
 unRText :: RText l -> Text
 unRText (RText txt) = txt

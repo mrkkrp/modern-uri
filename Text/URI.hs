@@ -7,7 +7,16 @@
 -- Stability   :  experimental
 -- Portability :  portable
 --
--- TODO Write a proper header here.
+-- This is modern library for working with URIs.
+--
+-- This module is intended to be imported qualified, e.g.:
+--
+-- > import Text.URI (URI)
+-- > import qualified Text.URI as URI
+--
+-- See also "Text.URI.Lens" for lens, prisms, and traversals; see
+-- "Text.URI.QQ" for quasi-quoters for compile-time validation of URIs and
+-- refined text components.
 
 module Text.URI
   ( -- * Data types
@@ -19,6 +28,7 @@ module Text.URI
   , QueryParam (..)
   , ParseException (..)
     -- * Refined text
+    -- $rtext
   , RText
   , RTextLabel (..)
   , mkScheme
@@ -43,3 +53,18 @@ where
 import Text.URI.Parser
 import Text.URI.Render
 import Text.URI.Types
+
+-- $rtext
+--
+-- Refined text values can only be created by using the smart constructors
+-- listed below, such as 'mkScheme'. This eliminates the possibility of
+-- having an invalid component in 'URI' which could invalidate the whole
+-- 'URI'.
+--
+-- Note that the refined text 'RText' type is labelled at the type level
+-- with 'RTextLabel's, which see.
+--
+-- When an invalid 'Data.Text.Text' value is passed to a smart constructor,
+-- it rejects it by throwing the 'RTextException'. Remember that the 'Maybe'
+-- datatype is also an instance of 'Control.Monad.Catch.MonadThrow', and so
+-- one could as well use the smart constructors in the 'Maybe' monad.
