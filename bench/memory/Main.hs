@@ -14,14 +14,22 @@ import qualified Text.URI  as URI
 main :: IO ()
 main = mainWith $ do
   setColumns [Case, Allocated, GCs, Max]
-  -- parser
-  bparser "https://github.com/mrkkrp/modern-uri"
-  -- renders
-  brender   (prepareURI "https://github.com/mrkkrp/modern-uri")
-  brenderBs (prepareURI "https://github.com/mrkkrp/modern-uri")
+  bparser   turiText
+  brender   turi
+  brenderBs turi
 
 ----------------------------------------------------------------------------
 -- Helpers
+
+-- | Test 'URI' as 'Text'.
+
+turiText :: Text
+turiText = "https://mark:secret@github.com:443/mrkkrp/modern-uri?foo=bar#fragment"
+
+-- | Test 'URI' in parsed form.
+
+turi :: URI
+turi = fromJust (URI.mkURI turiText)
 
 -- | Benchmark memory usage of the 'URI' parser with given input.
 
@@ -30,11 +38,6 @@ bparser txt = func name (parse p "") txt
   where
     name = "parser: " ++ T.unpack txt
     p    = URI.parser <* eof :: Parsec Void Text URI
-
--- | Parse a 'URI' from 'Text' assuming that the 'Text' is a valid 'URI'.
-
-prepareURI :: Text -> URI
-prepareURI = fromJust . URI.mkURI
 
 -- | Benchmark memory usage of the 'URI' render with given input.
 
