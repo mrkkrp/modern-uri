@@ -81,12 +81,14 @@ genericRender d r URI {..} = mconcat
   , rPath r uriPath
   , rQuery r uriQuery
   , rJust (rFragment r) uriFragment ]
+{-# INLINE genericRender #-}
 
 rJust :: Monoid m => (a -> m) -> Maybe a -> m
 rJust = maybe mempty
 
 rScheme :: R b => Render (RText 'Scheme) b
 rScheme r = (<> ":") . r Q
+{-# INLINE rScheme #-}
 
 rAuthority :: R b => (Word -> b) -> Render Authority b
 rAuthority d r Authority {..} = mconcat
@@ -96,28 +98,34 @@ rAuthority d r Authority {..} = mconcat
       then r N authHost
       else r Q authHost
   , rJust ((":" <>) . d) authPort ]
+{-# INLINE rAuthority #-}
 
 rUserInfo :: R b => Render UserInfo b
 rUserInfo r UserInfo {..} = mconcat
   [ r Q uiUsername
   , rJust ((":" <>) . r Q) uiPassword
   , "@" ]
+{-# INLINE rUserInfo #-}
 
 rPath :: R b => Render [RText 'PathPiece] b
 rPath r ps = "/" <> mconcat (intersperse "/" (r P <$> ps))
+{-# INLINE rPath #-}
 
 rQuery :: R b => Render [QueryParam] b
 rQuery r = \case
   [] -> mempty
   qs -> "?" <> mconcat (intersperse "&" (rQueryParam r <$> qs))
+{-# INLINE rQuery #-}
 
 rQueryParam :: R b => Render QueryParam b
 rQueryParam r = \case
   QueryFlag flag -> r P flag
   QueryParam k v -> r P k <> "=" <> r P v
+{-# INLINE rQueryParam #-}
 
 rFragment :: R b => Render (RText 'Fragment) b
 rFragment r = ("#" <>) . r P
+{-# INLINE rFragment #-}
 
 ----------------------------------------------------------------------------
 -- Percent-encoding

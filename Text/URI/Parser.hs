@@ -70,6 +70,7 @@ parser = do
   uriQuery     <- option [] pQuery
   uriFragment  <- optional pFragment
   return URI {..}
+{-# INLINEABLE parser #-}
 
 pScheme :: MonadParsec e Text m => m (RText 'Scheme)
 pScheme = do
@@ -77,6 +78,7 @@ pScheme = do
   xs <- many (asciiAlphaNumChar <|> char '+' <|> char '-' <|> char '.')
   void (char ':')
   liftR mkScheme (x:xs)
+{-# INLINE pScheme #-}
 
 pAuthority :: MonadParsec e Text m => m Authority
 pAuthority = do
@@ -85,6 +87,7 @@ pAuthority = do
   authHost <- pHost True >>= liftR mkHost
   authPort <- optional (char ':' *> L.decimal)
   return Authority {..}
+{-# INLINE pAuthority #-}
 
 pUserInfo :: MonadParsec e Text m => m UserInfo
 pUserInfo = try $ do
@@ -97,6 +100,7 @@ pUserInfo = try $ do
       >>= liftR mkPassword
   void (char '@')
   return UserInfo {..}
+{-# INLINE pUserInfo #-}
 
 pPath :: MonadParsec e Text m => Bool -> m [RText 'PathPiece]
 pPath hadNoAuth = do
@@ -106,6 +110,7 @@ pPath hadNoAuth = do
   path <- flip sepBy (char '/') . label "path piece" $
     many pchar
   mapM (liftR mkPathPiece) (filter (not . null) path)
+{-# INLINE pPath #-}
 
 pQuery :: MonadParsec e Text m => m [QueryParam]
 pQuery = do
@@ -120,6 +125,7 @@ pQuery = do
       else Just <$> case mv of
              Nothing -> return (QueryFlag k)
              Just v  -> QueryParam k <$> liftR mkQueryValue v
+{-# INLINE pQuery #-}
 
 pFragment :: MonadParsec e Text m => m (RText 'Fragment)
 pFragment = do
@@ -127,6 +133,7 @@ pFragment = do
   xs <- many . label "fragment character" $
     pchar <|> char '/' <|> char '?'
   liftR mkFragment xs
+{-# INLINE pFragment #-}
 
 ----------------------------------------------------------------------------
 -- Helpers
@@ -136,16 +143,20 @@ liftR :: MonadParsec e s m
   -> String
   -> m r
 liftR f = maybe empty return . f . TE.decodeUtf8 . B8.pack
+{-# INLINE liftR #-}
 
 asciiAlphaChar :: MonadParsec e Text m => m Char
 asciiAlphaChar = satisfy isAsciiAlpha <?> "ASCII alpha character"
+{-# INLINE asciiAlphaChar #-}
 
 asciiAlphaNumChar :: MonadParsec e Text m => m Char
 asciiAlphaNumChar = satisfy isAsciiAlphaNum <?> "ASCII alpha-numeric character"
+{-# INLINE asciiAlphaNumChar #-}
 
 unreservedChar :: MonadParsec e Text m => m Char
 unreservedChar = label "unreserved character" . satisfy $ \x ->
   isAsciiAlphaNum x || x == '-' || x == '.' || x == '_' || x == '~'
+{-# INLINE unreservedChar #-}
 
 percentEncChar :: MonadParsec e Text m => m Char
 percentEncChar = do
@@ -153,11 +164,13 @@ percentEncChar = do
   h <- digitToInt <$> hexDigitChar
   l <- digitToInt <$> hexDigitChar
   return . chr $ h * 16 + l
+{-# INLINE percentEncChar #-}
 
 subDelimChar :: MonadParsec e Text m => m Char
 subDelimChar = oneOf s <?> "sub-delimiter"
   where
     s = E.fromList "!$&'()*+,;="
+{-# INLINE subDelimChar #-}
 
 pchar :: MonadParsec e Text m => m Char
 pchar = choice
@@ -166,6 +179,7 @@ pchar = choice
   , subDelimChar
   , char ':'
   , char '@' ]
+{-# INLINE pchar #-}
 
 pchar' :: MonadParsec e Text m => m Char
 pchar' = choice
@@ -176,6 +190,7 @@ pchar' = choice
   , char '@' ]
   where
     s = E.fromList "!$'()*+,;"
+{-# INLINE pchar' #-}
 
 isAsciiAlpha :: Char -> Bool
 isAsciiAlpha x = isAscii x && isAlpha x
