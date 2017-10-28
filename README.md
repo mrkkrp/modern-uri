@@ -7,13 +7,63 @@
 [![Build Status](https://travis-ci.org/mrkkrp/modern-uri.svg?branch=master)](https://travis-ci.org/mrkkrp/modern-uri)
 [![Coverage Status](https://coveralls.io/repos/mrkkrp/modern-uri/badge.svg?branch=master&service=github)](https://coveralls.io/github/mrkkrp/modern-uri?branch=master)
 
-This is a modern library for working with URIs in Haskell. Compared to the
-`uri` package:
+This is a modern library for working with URIs in Haskell.
 
-* Uses `Text` instead of `String`.
-* More type-safe data types that make invalid data unrepresentable.
-* Megaparsec for parsing instead of Parsec.
-* Parsing and rendering are tuned for performance.
+## Motivation
+
+There are already at least two libraries for working with URIs:
+[`uri`](https://hackage.haskell.org/package/uri) and
+[`uri-bytestring`](https://hackage.haskell.org/package/uri-bytestring). Why
+write one more?
+
+Let's see first about the `uri` package:
+
+* It uses `String` instead of `Text` or `ByteString`, it is thus
+  inefficient.
+* The types are not very precise. Query string is represented as `Maybe
+  String` for example.
+* Uses Parsec under the hood, however does not allow us to use its URI
+  parser in a bigger Parsec parser.
+
+Now what about `uri-bytestring`?
+
+* Works with `ByteString`, which totally makes sense because a URI can have
+  only ASCII characters in it. However sometimes a URI is a part of a bigger
+  document that can contain Unicode characters and so we may need to parse a
+  URI from `Text` or render it to `Text`. Ideally, we would like to be able
+  to parse from both `Text` and `ByteString` as well to render to both
+  `Text` and `ByteString`.
+* Does not allow to use its URI parser as part of a bigger parser.
+* Provides `newtype` wrappers for different components of URI, but we could
+  still put something incorrect inside.
+* Absolute and relative URI references have different types, which may or
+  may not be handy.
+* Provides lenses, but does not provide e.g. traversal for working with
+  query parameters selected by their names.
+
+## Features
+
+The `modern-uri` package features:
+
+* Correct by construction `URI` data type. Correctness is ensured by
+  guaranteeing that every sub-component of the `URI` record is by itself
+  cannot be invalid. This boils down to careful use of types and a set of
+  smart constructors for things like scheme, host, etc.
+* Absolute and relative URIs differ only by the scheme component: if it's
+  `Nothing`, then URI is relative, otherwise it's absolute.
+* Megaparsec parser that can be used as a standalone smart constructor for
+  the `URI` data type (see `mkURI`) as well as be seamlessly integrated into
+  a bigger Megaparsec parser.
+* Fast rendering to strict `Text` and `ByteString` as well as to their
+  respective `Builder` types.
+* Extensive set of lensy helpers for easier manipulation of the nested data
+  types (see `Text.URI.Lens`).
+* Quasi-quoters for compile-time construction of the `URI` data type and
+  refined text types (see `Text.URI.QQ`).
+
+TODO:
+
+* Provide parser that can parse URIs from `ByteString`s.
 
 ## Contribution
 
