@@ -7,7 +7,7 @@
 -- Stability   :  experimental
 -- Portability :  portable
 --
--- URI parsers for string 'ByteString', an internal module.
+-- URI parser for string 'ByteString', an internal module.
 
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE FlexibleContexts   #-}
