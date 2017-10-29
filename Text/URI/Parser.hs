@@ -64,7 +64,8 @@ data ParseException = ParseException Text (ParseError Char Void)
 instance Exception ParseException where
   displayException (ParseException s e) = parseErrorPretty' s e
 
--- | This parser can be used to parse 'URI' from strict 'Text'.
+-- | This parser can be used to parse 'URI' from strict 'Text'. Remember to
+-- use a concrete non-polymorphic parser type for efficiency.
 
 parser :: MonadParsec e Text m => m URI
 parser = do
