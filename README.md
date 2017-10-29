@@ -11,39 +11,6 @@ This is a modern library for working with URIs in Haskell as per RFC 3986:
 
 https://tools.ietf.org/html/rfc3986
 
-## Motivation
-
-There are already at least three libraries for working with URIs:
-[`uri`](https://hackage.haskell.org/package/uri),
-[`network-uri`](https://hackage.haskell.org/package/network-uri), and
-[`uri-bytestring`](https://hackage.haskell.org/package/uri-bytestring). Why
-write one more?
-
-Let's see first about the `uri` and `network-uri` packages (they are quite
-similar):
-
-* They use `String` instead of `Text` or `ByteString`, this is inefficient.
-* The types are not very precise. Query string is represented as `Maybe
-  String` for example.
-* The packages use Parsec under the hood, however they do not allow us to
-  use its URI parser in a bigger Parsec parser.
-
-Now what about `uri-bytestring`?
-
-* Works with `ByteString`, which totally makes sense because a URI can have
-  only ASCII characters in it. However sometimes a URI is a part of a bigger
-  document that can contain Unicode characters and so we may need to parse a
-  URI from `Text` or render it to `Text`. Ideally, we would like to be able
-  to parse from both `Text` and `ByteString` as well to render to both
-  `Text` and `ByteString`.
-* Does not allow to use its URI parser as part of a bigger parser.
-* Provides `newtype` wrappers for different components of URI, but we could
-  still put something incorrect inside.
-* Absolute and relative URI references have different types, which may or
-  may not be handy.
-* Provides lenses, but does not provide e.g. traversal for working with
-  query parameters selected by their names.
-
 ## Features
 
 The `modern-uri` package features:
