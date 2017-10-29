@@ -62,7 +62,8 @@ The `modern-uri` package features:
   `Nothing`, then URI is relative, otherwise it's absolute.
 * Megaparsec parser that can be used as a standalone smart constructor for
   the `URI` data type (see `mkURI`) as well as be seamlessly integrated into
-  a bigger Megaparsec parser.
+  a bigger Megaparsec parser that consumes strict `Text` (see `parser`) or
+  strict `ByteString` (see `parserBs`).
 * The parser performs some normalization, for example it collapses
   consecutive slashes. Some smart constructors such as `mkScheme` and
   `mkHost` also perform normalization. So in a sense URIs are also
@@ -73,10 +74,6 @@ The `modern-uri` package features:
   types (see `Text.URI.Lens`).
 * Quasi-quoters for compile-time construction of the `URI` data type and
   refined text types (see `Text.URI.QQ`).
-
-TODO:
-
-* Provide parser that can parse URIs from `ByteString`s.
 
 ## Contribution
 
