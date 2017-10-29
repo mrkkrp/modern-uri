@@ -22,12 +22,11 @@ write one more?
 Let's see first about the `uri` and `network-uri` packages (they are quite
 similar):
 
-* It uses `String` instead of `Text` or `ByteString`, it is thus
-  inefficient.
+* They use `String` instead of `Text` or `ByteString`, this is inefficient.
 * The types are not very precise. Query string is represented as `Maybe
   String` for example.
-* Uses Parsec under the hood, however does not allow us to use its URI
-  parser in a bigger Parsec parser.
+* The packages use Parsec under the hood, however they do not allow us to
+  use its URI parser in a bigger Parsec parser.
 
 Now what about `uri-bytestring`?
 
