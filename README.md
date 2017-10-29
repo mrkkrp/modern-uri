@@ -53,11 +53,20 @@ The `modern-uri` package features:
   guaranteeing that every sub-component of the `URI` record is by itself
   cannot be invalid. This boils down to careful use of types and a set of
   smart constructors for things like scheme, host, etc.
+* Textual components in the `URI` data type represented as `Text` rather
+  than `ByteString`, because they are percent-decoded and so they can
+  contain characters outside of ASCII range (i.e. Unicode). This allows for
+  easier manipulation of `URI`s, while encoding and decoding headaches are
+  handled by the parsers and renders for you.
 * Absolute and relative URIs differ only by the scheme component: if it's
   `Nothing`, then URI is relative, otherwise it's absolute.
 * Megaparsec parser that can be used as a standalone smart constructor for
   the `URI` data type (see `mkURI`) as well as be seamlessly integrated into
   a bigger Megaparsec parser.
+* The parser performs some normalization, for example it collapses
+  consecutive slashes. Some smart constructors such as `mkScheme` and
+  `mkHost` also perform normalization. So in a sense URIs are also
+  “normalized by construction” to some extent.
 * Fast rendering to strict `Text` and `ByteString` as well as to their
   respective `Builder` types.
 * Extensive set of lensy helpers for easier manipulation of the nested data
