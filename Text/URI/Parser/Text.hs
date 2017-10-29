@@ -75,6 +75,7 @@ parser = do
   uriFragment  <- optional pFragment
   return URI {..}
 {-# INLINEABLE parser #-}
+{-# SPECIALIZE parser :: Parsec Void Text URI #-}
 
 pScheme :: MonadParsec e Text m => m (RText 'Scheme)
 pScheme = do

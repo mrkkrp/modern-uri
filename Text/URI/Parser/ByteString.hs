@@ -27,6 +27,7 @@ import Data.Char
 import Data.List (intercalate)
 import Data.Maybe (isNothing, catMaybes, maybeToList)
 import Data.Text (Text)
+import Data.Void
 import Data.Word (Word8)
 import Text.Megaparsec
 import Text.Megaparsec.Byte
@@ -51,6 +52,7 @@ parserBs = do
   uriFragment  <- optional pFragment
   return URI {..}
 {-# INLINEABLE parserBs #-}
+{-# SPECIALIZE parserBs :: Parsec Void ByteString URI #-}
 
 pScheme :: MonadParsec e ByteString m => m (RText 'Scheme)
 pScheme = do
