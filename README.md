@@ -13,12 +13,14 @@ https://tools.ietf.org/html/rfc3986
 
 ## Motivation
 
-There are already at least two libraries for working with URIs:
-[`uri`](https://hackage.haskell.org/package/uri) and
+There are already at least three libraries for working with URIs:
+[`uri`](https://hackage.haskell.org/package/uri),
+[`network-uri`](https://hackage.haskell.org/package/network-uri), and
 [`uri-bytestring`](https://hackage.haskell.org/package/uri-bytestring). Why
 write one more?
 
-Let's see first about the `uri` package:
+Let's see first about the `uri` and `network-uri` packages (they are quite
+similar):
 
 * It uses `String` instead of `Text` or `ByteString`, it is thus
   inefficient.
