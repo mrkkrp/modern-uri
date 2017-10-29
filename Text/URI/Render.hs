@@ -71,11 +71,15 @@ renderBs' = genericRender BLB.wordDec $ \e ->
   BLB.byteString . TE.encodeUtf8 . percentEncode e . unRText
 
 -- | Render a given 'URI' value as a 'String'.
+--
+-- @since 0.0.2.0
 
 renderStr :: URI -> String
 renderStr = ($ []) . renderStr'
 
 -- | Render a given 'URI' value as 'ShowS'.
+--
+-- @since 0.0.2.0
 
 renderStr' :: URI -> ShowS
 renderStr' = toShowS . genericRender (DString . showInt) (\e ->

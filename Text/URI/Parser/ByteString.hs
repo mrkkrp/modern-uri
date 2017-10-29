@@ -39,6 +39,8 @@ import qualified Text.Megaparsec.Byte.Lexer as L
 
 -- | This parser can be used to parse 'URI' from strict 'ByteString'.
 -- Remember to use a concrete non-polymorphic parser type for efficiency.
+--
+-- @since 0.0.2.0
 
 parserBs :: MonadParsec e ByteString m => m URI
 parserBs = do
