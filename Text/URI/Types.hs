@@ -43,14 +43,13 @@ module Text.URI.Types
   , pHost )
 where
 
-import Control.Applicative
 import Control.DeepSeq
 import Control.Monad
 import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.Char
 import Data.Data (Data)
 import Data.List (intercalate)
-import Data.Maybe (fromMaybe, isJust, fromJust, maybeToList)
+import Data.Maybe (fromMaybe, isJust, fromJust)
 import Data.Proxy
 import Data.Text (Text)
 import Data.Typeable (Typeable)
@@ -61,10 +60,8 @@ import Numeric (showInt, showHex)
 import Test.QuickCheck hiding (label)
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import qualified Data.List.NonEmpty         as NE
-import qualified Data.Set                   as E
-import qualified Data.Text                  as T
-import qualified Text.Megaparsec.Char.Lexer as L
+import Text.URI.Parser.Text.Utils (pHost)
+import qualified Data.Text as T
 
 ----------------------------------------------------------------------------
 -- Data types
@@ -379,92 +376,6 @@ instance Exception RTextException where
 
 ifMatches :: Parsec Void Text () -> Text -> Bool
 ifMatches p = isJust . parseMaybe p
-
--- | Parser for unreserved characters as per RFC3986.
-
-unreserved :: MonadParsec e Text m => m Char
-unreserved = label "unreserved character" . satisfy $ \x ->
-  isAlphaNum x || x == '-' || x == '.' || x == '_' || x == '~'
-
--- | Match a sub-delimiter.
-
-subDelim :: MonadParsec e Text m => m Char
-subDelim = oneOf s <?> "sub-delimiter"
-  where
-    s = E.fromList "!$&'()*+,;="
-
--- | Parser that can parse host names.
-
-pHost :: MonadParsec e Text m
-  => Bool              -- ^ Demand percent-encoding in reg names
-  -> m String
-pHost pe = choice
-  [ try (asConsumed ipLiteral)
-  , try (asConsumed ipv4Address)
-  , regName ]
-  where
-    asConsumed :: MonadParsec e Text m => m a -> m String
-    asConsumed p = T.unpack . fst <$> match p
-    ipLiteral = between (char '[') (char ']') $
-      try ipv6Address <|> ipvFuture
-    octet = do
-      pos       <- getNextTokenPosition
-      (toks, x) <- match L.decimal
-      when (x >= (256 :: Integer)) $ do
-        mapM_ setPosition pos
-        failure
-          (fmap Tokens . NE.nonEmpty . T.unpack $ toks)
-          (E.singleton . Label . NE.fromList $ "decimal number from 0 to 255")
-    ipv4Address =
-      count 3 (octet <* char '.') *> octet
-    ipv6Address = do
-      pos        <- getNextTokenPosition
-      (toks, xs) <- match $ do
-        xs' <- maybeToList <$> optional ("" <$ string "::")
-        xs  <- flip sepBy1 (char ':') $ do
-          (skip, hasMore) <- lookAhead . hidden $ do
-            skip    <- option False (True <$ char ':')
-            hasMore <- option False (True <$ hexDigitChar)
-            return (skip, hasMore)
-          case (skip, hasMore) of
-            (True,  True)  -> return ""
-            (True,  False) -> "" <$ char ':'
-            (False, _)     -> count' 1 4 hexDigitChar
-        return (xs' ++ xs)
-      let nskips  = length (filter null xs)
-          npieces = length xs
-      unless (nskips < 2 && (npieces == 8 || (nskips == 1 && npieces < 8))) $ do
-        mapM_ setPosition pos
-        failure
-          (fmap Tokens . NE.nonEmpty . T.unpack $ toks)
-          (E.singleton . Label . NE.fromList $ "valid IPv6 address")
-    ipvFuture = do
-      void (char 'v')
-      void hexDigitChar
-      void (char '.')
-      skipSome (unreserved <|> subDelim <|> char ':')
-    regName = fmap (intercalate ".") . flip sepBy1 (char '.') $ do
-      let ch =
-            if pe
-              then percentEncChar <|> asciiAlphaNumChar
-              else alphaNumChar
-      x <- ch
-      let r = ch <|> try
-            (char '-' <* (lookAhead . try) (ch <|> char '-'))
-      xs <- many r
-      return (x:xs)
-
-asciiAlphaNumChar :: MonadParsec e Text m => m Char
-asciiAlphaNumChar = satisfy f <?> "ASCII alpha-numeric character"
-  where
-    f x = isAscii x && isAlphaNum x
-
-percentEncChar :: MonadParsec e Text m => m Char
-percentEncChar = do
-  void (char '%')
-  h <- digitToInt <$> hexDigitChar
-  l <- digitToInt <$> hexDigitChar
-  return . chr $ h * 16 + l
 
 ----------------------------------------------------------------------------
 -- Arbitrary helpers

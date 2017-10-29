@@ -45,6 +45,7 @@ module Text.URI
   , RTextException (..)
     -- * Parsing
   , parser
+  , parserBs
     -- * Rendering
   , render
   , render'
@@ -54,7 +55,8 @@ module Text.URI
   , renderStr' )
 where
 
-import Text.URI.Parser
+import Text.URI.Parser.ByteString
+import Text.URI.Parser.Text
 import Text.URI.Render
 import Text.URI.Types
 

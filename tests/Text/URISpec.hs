@@ -3,6 +3,7 @@
 
 module Text.URISpec (spec) where
 
+import Data.ByteString (ByteString)
 import Data.Maybe (isNothing, isJust)
 import Data.Text (Text)
 import Data.Void
@@ -128,6 +129,10 @@ spec = do
     it "parser and render are consistent" $
       property $ \uri ->
         shouldParse' (URI.render uri) uri
+  describe "parseBs and renderBs" $
+    it "parser and render are consistent" $
+      property $ \uri ->
+        shouldParseBs (URI.renderBs uri) uri
   describe "parse" $ do
     it "rejects Unicode in scheme" $
       parse urip "" "что:something" `shouldFailWith` err posI (mconcat
@@ -222,6 +227,19 @@ shouldParse'
   -> Expectation
 shouldParse' s a =
   case runParser urip "" s of
+    Left e -> expectationFailure $
+      "the parser is expected to succeed, but it failed with:\n" ++
+      parseErrorPretty' s e
+    Right a' -> a' `shouldBe` a
+
+-- | Similar to 'shouldParse'' but uses 'URI.parserBs' under the hood.
+
+shouldParseBs
+  :: ByteString        -- ^ Parser input
+  -> URI               -- ^ 'URI' to compare with
+  -> Expectation
+shouldParseBs s a =
+  case runParser (URI.parserBs <* eof :: Parsec Void ByteString URI) "" s of
     Left e -> expectationFailure $
       "the parser is expected to succeed, but it failed with:\n" ++
       parseErrorPretty' s e

@@ -1,5 +1,5 @@
 -- |
--- Module      :  Text.URI.Parser
+-- Module      :  Text.URI.Parser.Text
 -- Copyright   :  © 2017 Mark Karpov
 -- License     :  BSD 3 clause
 --
@@ -7,7 +7,7 @@
 -- Stability   :  experimental
 -- Portability :  portable
 --
--- URI parsers, an internal module.
+-- URI parser for strict 'Text', an internal module.
 
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DeriveDataTypeable #-}
@@ -17,7 +17,7 @@
 {-# LANGUAGE RankNTypes         #-}
 {-# LANGUAGE RecordWildCards    #-}
 
-module Text.URI.Parser
+module Text.URI.Parser.Text
   ( mkURI
   , parser
   , ParseException (..) )
@@ -26,7 +26,6 @@ where
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Catch (Exception (..), MonadThrow (..))
-import Data.Char
 import Data.Data (Data)
 import Data.Maybe (isNothing, catMaybes)
 import Data.Text (Text)
@@ -35,10 +34,10 @@ import Data.Void
 import GHC.Generics
 import Text.Megaparsec
 import Text.Megaparsec.Char
+import Text.URI.Parser.Text.Utils
 import Text.URI.Types
 import qualified Data.ByteString.Char8      as B8
 import qualified Data.List.NonEmpty         as NE
-import qualified Data.Set                   as E
 import qualified Data.Text.Encoding         as TE
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -149,56 +148,3 @@ liftR :: MonadParsec e s m
   -> m r
 liftR f = maybe empty return . f . TE.decodeUtf8 . B8.pack
 {-# INLINE liftR #-}
-
-asciiAlphaChar :: MonadParsec e Text m => m Char
-asciiAlphaChar = satisfy isAsciiAlpha <?> "ASCII alpha character"
-{-# INLINE asciiAlphaChar #-}
-
-asciiAlphaNumChar :: MonadParsec e Text m => m Char
-asciiAlphaNumChar = satisfy isAsciiAlphaNum <?> "ASCII alpha-numeric character"
-{-# INLINE asciiAlphaNumChar #-}
-
-unreservedChar :: MonadParsec e Text m => m Char
-unreservedChar = label "unreserved character" . satisfy $ \x ->
-  isAsciiAlphaNum x || x == '-' || x == '.' || x == '_' || x == '~'
-{-# INLINE unreservedChar #-}
-
-percentEncChar :: MonadParsec e Text m => m Char
-percentEncChar = do
-  void (char '%')
-  h <- digitToInt <$> hexDigitChar
-  l <- digitToInt <$> hexDigitChar
-  return . chr $ h * 16 + l
-{-# INLINE percentEncChar #-}
-
-subDelimChar :: MonadParsec e Text m => m Char
-subDelimChar = oneOf s <?> "sub-delimiter"
-  where
-    s = E.fromList "!$&'()*+,;="
-{-# INLINE subDelimChar #-}
-
-pchar :: MonadParsec e Text m => m Char
-pchar = choice
-  [ unreservedChar
-  , percentEncChar
-  , subDelimChar
-  , char ':'
-  , char '@' ]
-{-# INLINE pchar #-}
-
-pchar' :: MonadParsec e Text m => m Char
-pchar' = choice
-  [ unreservedChar
-  , percentEncChar
-  , oneOf s <?> "sub-delimiter"
-  , char ':'
-  , char '@' ]
-  where
-    s = E.fromList "!$'()*+,;"
-{-# INLINE pchar' #-}
-
-isAsciiAlpha :: Char -> Bool
-isAsciiAlpha x = isAscii x && isAlpha x
-
-isAsciiAlphaNum :: Char -> Bool
-isAsciiAlphaNum x = isAscii x && isAlphaNum x

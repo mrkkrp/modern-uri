@@ -33,7 +33,7 @@ import Data.Typeable (cast)
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import Language.Haskell.TH.Syntax (lift)
-import Text.URI.Parser
+import Text.URI.Parser.Text
 import Text.URI.Types
 import qualified Data.Text as T
 
