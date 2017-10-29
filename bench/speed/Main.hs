@@ -13,9 +13,10 @@ import qualified Text.URI  as URI
 
 main :: IO ()
 main = defaultMain
-  [ bparser   turiText
-  , brender   turi
-  , brenderBs turi ]
+  [ bparser    turiText
+  , brender    turi
+  , brenderBs  turi
+  , brenderStr turi ]
 
 ----------------------------------------------------------------------------
 -- Helpers
@@ -51,3 +52,10 @@ brenderBs :: URI -> Benchmark
 brenderBs uri = env (return uri) (bench name . nf URI.renderBs)
   where
     name = "bs render: " ++ T.unpack (URI.render uri)
+
+-- |
+
+brenderStr :: URI -> Benchmark
+brenderStr uri = env (return uri) (bench name . nf URI.renderStr)
+  where
+    name = "str render: " ++ T.unpack (URI.render uri)

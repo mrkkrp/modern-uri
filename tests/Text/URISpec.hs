@@ -165,6 +165,10 @@ spec = do
     it "sort of works" $
       fmap URI.renderBs mkTestURI `shouldReturn`
         "https://mark:secret@github.com:443/mrkkrp/modern-uri?foo=bar#fragment"
+  describe "renderStr" $
+    it "sort of works" $
+      fmap URI.renderStr mkTestURI `shouldReturn`
+        "https://mark:secret@github.com:443/mrkkrp/modern-uri?foo=bar#fragment"
 
 ----------------------------------------------------------------------------
 -- Helpers

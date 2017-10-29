@@ -20,7 +20,9 @@ module Text.URI.Render
   ( render
   , render'
   , renderBs
-  , renderBs' )
+  , renderBs'
+  , renderStr
+  , renderStr' )
 where
 
 import Data.ByteString (ByteString)
@@ -31,10 +33,12 @@ import Data.Monoid
 import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Word (Word8)
+import Numeric (showInt)
 import Text.URI.Types
 import qualified Data.ByteString              as B
 import qualified Data.ByteString.Lazy         as BL
 import qualified Data.ByteString.Lazy.Builder as BLB
+import qualified Data.Semigroup               as S
 import qualified Data.Text                    as T
 import qualified Data.Text.Encoding           as TE
 import qualified Data.Text.Lazy               as TL
@@ -55,7 +59,7 @@ render' :: URI -> TLB.Builder
 render' = genericRender TLB.decimal $ \e ->
   TLB.fromText . percentEncode e . unRText
 
--- | Render a given 'URI.Normalized' value as a strict 'ByteString'.
+-- | Render a given 'URI' value as a strict 'ByteString'.
 
 renderBs :: URI -> ByteString
 renderBs = BL.toStrict . BLB.toLazyByteString . renderBs'
@@ -65,6 +69,17 @@ renderBs = BL.toStrict . BLB.toLazyByteString . renderBs'
 renderBs' :: URI -> BLB.Builder
 renderBs' = genericRender BLB.wordDec $ \e ->
   BLB.byteString . TE.encodeUtf8 . percentEncode e . unRText
+
+-- | Render a given 'URI' value as a 'String'.
+
+renderStr :: URI -> String
+renderStr = ($ []) . renderStr'
+
+-- | Render a given 'URI' value as 'ShowS'.
+
+renderStr' :: URI -> ShowS
+renderStr' = toShowS . genericRender (DString . showInt) (\e ->
+  fromString . T.unpack . percentEncode e . unRText)
 
 ----------------------------------------------------------------------------
 -- Generic render
@@ -126,6 +141,21 @@ rQueryParam r = \case
 rFragment :: R b => Render (RText 'Fragment) b
 rFragment r = ("#" <>) . r P
 {-# INLINE rFragment #-}
+
+----------------------------------------------------------------------------
+-- DString
+
+newtype DString = DString { toShowS :: ShowS }
+
+instance S.Semigroup DString where
+  DString a <> DString b = DString (a . b)
+
+instance Monoid DString where
+  mempty = DString id
+  mappend = (S.<>)
+
+instance IsString DString where
+  fromString str = DString (str ++)
 
 ----------------------------------------------------------------------------
 -- Percent-encoding

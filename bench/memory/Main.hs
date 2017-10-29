@@ -14,9 +14,10 @@ import qualified Text.URI  as URI
 main :: IO ()
 main = mainWith $ do
   setColumns [Case, Allocated, GCs, Max]
-  bparser   turiText
-  brender   turi
-  brenderBs turi
+  bparser    turiText
+  brender    turi
+  brenderBs  turi
+  brenderStr turi
 
 ----------------------------------------------------------------------------
 -- Helpers
@@ -46,9 +47,16 @@ brender uri = func name URI.render uri
   where
     name = "text render: " ++ T.unpack (URI.render uri)
 
--- | The same as 'brender' but for the 'ByteString' render.
+-- | The same as 'brender' but for the 'URI.renderBs' render.
 
 brenderBs :: URI -> Weigh ()
 brenderBs uri = func name URI.renderBs uri
   where
     name = "bs render: " ++ T.unpack (URI.render uri)
+
+-- | The same as 'brender' but for the 'URI.renderString' render.
+
+brenderStr :: URI -> Weigh ()
+brenderStr uri = func name URI.renderStr uri
+  where
+    name = "str render: " ++ T.unpack (URI.render uri)

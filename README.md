@@ -68,7 +68,7 @@ The `modern-uri` package features:
   `mkHost` also perform normalization. So in a sense URIs are also
   “normalized by construction” to some extent.
 * Fast rendering to strict `Text` and `ByteString` as well as to their
-  respective `Builder` types.
+  respective `Builder` types and to `String`/`ShowS`.
 * Extensive set of lensy helpers for easier manipulation of the nested data
   types (see `Text.URI.Lens`).
 * Quasi-quoters for compile-time construction of the `URI` data type and

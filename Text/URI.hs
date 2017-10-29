@@ -49,7 +49,9 @@ module Text.URI
   , render
   , render'
   , renderBs
-  , renderBs' )
+  , renderBs'
+  , renderStr
+  , renderStr' )
 where
 
 import Text.URI.Parser
