@@ -23,6 +23,7 @@ module Text.URI.Types
   ( -- * Data types
     URI (..)
   , makeAbsolute
+  , isPathAbsolute
   , Authority (..)
   , UserInfo (..)
   , QueryParam (..)
@@ -73,8 +74,13 @@ import qualified Data.Text as T
 data URI = URI
   { uriScheme :: Maybe (RText 'Scheme)
     -- ^ URI scheme, if 'Nothing', then the URI reference is relative
-  , uriAuthority :: Maybe Authority
-    -- ^ 'Authority' component
+  , uriAuthority :: Either Bool Authority
+    -- ^ 'Authority' component in 'Right' or a 'Bool' value in 'Left'
+    -- indicating if 'uriPath' path is absolute ('True') or relative
+    -- ('False'); if we have an 'Authority' component, then the path is
+    -- necessarily absolute, see 'isPathAbsolute'
+    --
+    -- __Note__: before version
   , uriPath :: [RText 'PathPiece]
     -- ^ Path
   , uriQuery :: [QueryParam]
@@ -100,6 +106,13 @@ makeAbsolute :: RText 'Scheme -> URI -> URI
 makeAbsolute scheme URI {..} = URI
   { uriScheme = pure (fromMaybe scheme uriScheme)
   , .. }
+
+-- | Return 'True' if path in a given 'URI' is absolute.
+--
+-- @since 0.1.0.0
+
+isPathAbsolute :: URI -> Bool
+isPathAbsolute = either id (const True) . uriAuthority
 
 -- | Authority component of 'URI'.
 

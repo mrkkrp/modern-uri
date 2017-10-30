@@ -25,7 +25,7 @@ import Control.Monad.Catch (MonadThrow (..))
 import Data.ByteString (ByteString)
 import Data.Char
 import Data.List (intercalate)
-import Data.Maybe (isNothing, catMaybes, maybeToList)
+import Data.Maybe (isJust, catMaybes, maybeToList)
 import Data.Text (Text)
 import Data.Void
 import Data.Word (Word8)
@@ -45,11 +45,12 @@ import qualified Text.Megaparsec.Byte.Lexer as L
 
 parserBs :: MonadParsec e ByteString m => m URI
 parserBs = do
-  uriScheme    <- optional (try pScheme)
-  uriAuthority <- optional pAuthority
-  uriPath      <- pPath (isNothing uriAuthority)
-  uriQuery     <- option [] pQuery
-  uriFragment  <- optional pFragment
+  uriScheme          <- optional (try pScheme)
+  mauth              <- optional pAuthority
+  (absPath, uriPath) <- pPath (isJust mauth)
+  uriQuery           <- option [] pQuery
+  uriFragment        <- optional pFragment
+  let uriAuthority = maybe (Left absPath) Right mauth
   return URI {..}
 {-# INLINEABLE parserBs #-}
 {-# SPECIALIZE parserBs :: Parsec Void ByteString URI #-}
@@ -140,14 +141,16 @@ pUserInfo = try $ do
   return UserInfo {..}
 {-# INLINE pUserInfo #-}
 
-pPath :: MonadParsec e ByteString m => Bool -> m [RText 'PathPiece]
-pPath hadNoAuth = do
-  doubleSlash <- lookAhead (True <$ string "//" <|> pure False)
-  when (doubleSlash && hadNoAuth) $
+pPath :: MonadParsec e ByteString m => Bool -> m (Bool, [RText 'PathPiece])
+pPath hasAuth = do
+  doubleSlash <- lookAhead (option False (True <$ string "//"))
+  when (doubleSlash && not hasAuth) $
     (unexpected . Tokens . NE.fromList) [47,47]
+  absPath <- option False (True <$ char 47)
   path <- flip sepBy (char 47) . label "path piece" $
     many pchar
-  mapM (liftR mkPathPiece) (filter (not . null) path)
+  pieces <- mapM (liftR mkPathPiece) (filter (not . null) path)
+  return (absPath, pieces)
 {-# INLINE pPath #-}
 
 pQuery :: MonadParsec e ByteString m => m [QueryParam]

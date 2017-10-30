@@ -192,7 +192,7 @@ mkTestURI = do
   fragment <- URI.mkFragment "fragment"
   return URI
     { uriScheme = Just scheme
-    , uriAuthority = Just URI.Authority
+    , uriAuthority = Right URI.Authority
       { URI.authUserInfo = Just URI.UserInfo
         { URI.uiUsername = username
         , URI.uiPassword = Just password }

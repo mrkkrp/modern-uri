@@ -27,7 +27,7 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.Data (Data)
-import Data.Maybe (isNothing, catMaybes)
+import Data.Maybe (isJust, catMaybes)
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import Data.Void
@@ -68,11 +68,12 @@ instance Exception ParseException where
 
 parser :: MonadParsec e Text m => m URI
 parser = do
-  uriScheme    <- optional (try pScheme)
-  uriAuthority <- optional pAuthority
-  uriPath      <- pPath (isNothing uriAuthority)
-  uriQuery     <- option [] pQuery
-  uriFragment  <- optional pFragment
+  uriScheme          <- optional (try pScheme)
+  mauth              <- optional pAuthority
+  (absPath, uriPath) <- pPath (isJust mauth)
+  uriQuery           <- option [] pQuery
+  uriFragment        <- optional pFragment
+  let uriAuthority = maybe (Left absPath) Right mauth
   return URI {..}
 {-# INLINEABLE parser #-}
 {-# SPECIALIZE parser :: Parsec Void Text URI #-}
@@ -107,14 +108,16 @@ pUserInfo = try $ do
   return UserInfo {..}
 {-# INLINE pUserInfo #-}
 
-pPath :: MonadParsec e Text m => Bool -> m [RText 'PathPiece]
-pPath hadNoAuth = do
-  doubleSlash <- lookAhead (True <$ string "//" <|> pure False)
-  when (doubleSlash && hadNoAuth) $
+pPath :: MonadParsec e Text m => Bool -> m (Bool, [RText 'PathPiece])
+pPath hasAuth = do
+  doubleSlash <- lookAhead (option False (True <$ string "//"))
+  when (doubleSlash && not hasAuth) $
     (unexpected . Tokens . NE.fromList) "//"
+  absPath <- option False (True <$ char '/')
   path <- flip sepBy (char '/') . label "path piece" $
     many pchar
-  mapM (liftR mkPathPiece) (filter (not . null) path)
+  pieces <- mapM (liftR mkPathPiece) (filter (not . null) path)
+  return (absPath, pieces)
 {-# INLINE pPath #-}
 
 pQuery :: MonadParsec e Text m => m [QueryParam]

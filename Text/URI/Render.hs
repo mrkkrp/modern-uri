@@ -88,16 +88,23 @@ renderStr' = toShowS . genericRender (DString . showInt) (\e ->
 ----------------------------------------------------------------------------
 -- Generic render
 
-data Escaping = N | P | Q deriving (Eq)
+-- | Percent encoding options.
+
+data Escaping
+  = N                  -- ^ No escaping
+  | P                  -- ^ Path-piece style, do not encode @:@ and @\@@
+  | PQ                 -- ^ Mixed style, encode @:@ but not @\@@
+  | Q                  -- ^ Query string style, encode @:@ and @\@@
+  deriving (Eq)
 
 type Render a b = (forall l. Escaping -> RText l -> b) -> a -> b
 type R        b = (Monoid b, IsString b)
 
 genericRender :: R b => (Word -> b) -> Render URI b
-genericRender d r URI {..} = mconcat
+genericRender d r uri@URI {..} = mconcat
   [ rJust (rScheme r) uriScheme
-  , rJust (rAuthority d r) uriAuthority
-  , rPath r uriPath
+  , rJust (rAuthority d r) (either (const Nothing) Just uriAuthority)
+  , rPath (isPathAbsolute uri) r uriPath
   , rQuery r uriQuery
   , rJust (rFragment r) uriFragment ]
 {-# INLINE genericRender #-}
@@ -126,8 +133,14 @@ rUserInfo r UserInfo {..} = mconcat
   , "@" ]
 {-# INLINE rUserInfo #-}
 
-rPath :: R b => Render [RText 'PathPiece] b
-rPath r ps = "/" <> mconcat (intersperse "/" (r P <$> ps))
+rPath :: R b => Bool -> Render [RText 'PathPiece] b
+rPath isAbsolute r ps' = leading <> other
+  where
+    leading = if isAbsolute then "/" else mempty
+    other   = mconcat . intersperse "/" $
+      case (isAbsolute, ps') of
+        (False, p:ps) -> r PQ p : fmap (r P) ps
+        _             -> r P <$> ps'
 {-# INLINE rPath #-}
 
 rQuery :: R b => Render [QueryParam] b
@@ -170,28 +183,28 @@ percentEncode
   :: Escaping          -- ^ Whether to leave @':'@ and @'@'@ unescaped
   -> Text              -- ^ Input text to encode
   -> Text              -- ^ Percent-encoded text
-percentEncode N txt = txt
 percentEncode e txt = T.unfoldrN n f (bs, [])
   where
     f (bs', []) =
       case B.uncons bs' of
         Nothing -> Nothing
         Just (w, bs'') -> Just $
-          if isUnreserved (e == P) w
+          if isUnreserved e w
             then (chr (fromIntegral w), (bs'', []))
             else let c:|cs = encodeByte w
                  in (c, (bs'', cs))
     f (bs', x:xs) = Just (x, (bs', xs))
     bs = TE.encodeUtf8 txt
     n  = B.foldl' (\n' w -> g w + n') 0 bs
-    g x = if isUnreserved (e == P) x then 1 else 3
+    g x = if isUnreserved e x then 1 else 3
     encodeByte x = '%' :| [intToDigit h, intToDigit l]
       where
         (h, l) = fromIntegral x `quotRem` 16
 
 -- | The predicate selects unreserved bytes.
 
-isUnreserved :: Bool -> Word8 -> Bool
+isUnreserved :: Escaping -> Word8 -> Bool
+isUnreserved N _ = True
 isUnreserved t x
   | x >= 65 && x <= 90  = True -- 'A'..'Z'
   | x >= 97 && x <= 122 = True -- 'a'..'z'
@@ -200,6 +213,9 @@ isUnreserved t x
   | x == 95             = True -- '_'
   | x == 46             = True -- '.'
   | x == 126            = True -- '~'
-  | t && x == 58        = True -- ':'
-  | t && x == 64        = True -- '@'
+  | semi && x == 58     = True -- ':'
+  | at   && x == 64     = True -- '@'
   | otherwise           = False
+  where
+    semi = t == P
+    at   = t == P || t == PQ
