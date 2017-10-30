@@ -171,9 +171,17 @@ spec = do
         , etok '?'
         , elabel "path piece"
         , eeof ] )
-  describe "render" $
+  describe "render" $ do
     it "sort of works" $
       fmap URI.render mkTestURI `shouldReturn` testURI
+    context "when URI has absolute path" $
+      it "escapes colon properly in first path piece" $
+        (URI.render <$> URI.mkURI "/docu:ment.html")
+          `shouldReturn` "/docu:ment.html"
+    context "when URI has relative path" $
+      it "escapes colon properly in first path piece" $
+        (URI.render <$> URI.mkURI "docu%3ament.html")
+          `shouldReturn` "docu%3ament.html"
   describe "renderBs" $
     it "sort of works" $
       fmap URI.renderBs mkTestURI `shouldReturn` testURI
