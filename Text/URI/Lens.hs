@@ -17,6 +17,7 @@ module Text.URI.Lens
   ( uriScheme
   , uriAuthority
   , uriPath
+  , isPathAbsolute
   , uriQuery
   , uriFragment
   , authUserInfo
@@ -45,14 +46,24 @@ uriScheme :: Lens' URI (Maybe (RText 'Scheme))
 uriScheme f s = (\x -> s { URI.uriScheme = x }) <$> f (URI.uriScheme s)
 
 -- | 'URI' authority lens.
+--
+-- __Note__: before version /0.1.0.0/ this lens allowed to focus on @'Maybe'
+-- 'URI.Authority'@.
 
-uriAuthority :: Lens' URI (Maybe URI.Authority)
+uriAuthority :: Lens' URI (Either Bool URI.Authority)
 uriAuthority f s = (\x -> s { URI.uriAuthority = x }) <$> f (URI.uriAuthority s)
 
 -- | 'URI' path lens.
 
 uriPath :: Lens' URI [RText 'PathPiece]
 uriPath f s = (\x -> s { URI.uriPath = x }) <$> f (URI.uriPath s)
+
+-- | A getter that can tell if path component of a 'URI' is absolute.
+--
+-- @since 0.1.0.0
+
+isPathAbsolute :: Getter URI Bool
+isPathAbsolute = to URI.isPathAbsolute
 
 -- | 'URI' query params lens.
 

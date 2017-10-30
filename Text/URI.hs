@@ -25,6 +25,7 @@ module Text.URI
     URI (..)
   , mkURI
   , makeAbsolute
+  , isPathAbsolute
   , Authority (..)
   , UserInfo (..)
   , QueryParam (..)
