@@ -6,7 +6,7 @@
   the path is necessarily absolute, otherwise the `Bool` value tells if it's
   absolute (`True`) or relative (`False`).
 
-* Added `isPathAbsolute` in `Text.URI` and corresponding getter in
+* Added `isPathAbsolute` in `Text.URI` and the corresponding getter in
   `Text.URI.Lens`.
 
 ## Modern URI 0.0.2.0

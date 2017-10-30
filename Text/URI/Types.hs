@@ -80,7 +80,8 @@ data URI = URI
     -- ('False'); if we have an 'Authority' component, then the path is
     -- necessarily absolute, see 'isPathAbsolute'
     --
-    -- __Note__: before version
+    -- __Note__: before version /0.1.0.0/ type of 'uriAuthority' was
+    -- @'Maybe' 'Authority'@
   , uriPath :: [RText 'PathPiece]
     -- ^ Path
   , uriQuery :: [QueryParam]
