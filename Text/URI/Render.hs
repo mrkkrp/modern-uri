@@ -213,9 +213,9 @@ isUnreserved t x
   | x == 95             = True -- '_'
   | x == 46             = True -- '.'
   | x == 126            = True -- '~'
-  | semi && x == 58     = True -- ':'
+  | colon && x == 58    = True -- ':'
   | at   && x == 64     = True -- '@'
   | otherwise           = False
   where
-    semi = t == P
-    at   = t == P || t == PQ
+    colon = t == P
+    at    = t == P || t == PQ
