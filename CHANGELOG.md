@@ -1,3 +1,8 @@
+## Modern URI 0.1.0.1
+
+* Updated the readme to include “Quick start” instructions and some
+  examples.
+
 ## Modern URI 0.1.0.0
 
 * Changed the type of `uriAuthority` from `Maybe Authority` to `Either Bool
