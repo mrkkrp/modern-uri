@@ -106,15 +106,15 @@ URI
   , uriFragment = Nothing }
 ```
 
-If argument of `mkURI` is not a valid URI, then an exception is thrown. The
-exception will contain full context and the actual parse error.
+If argument of `mkURI` is not a valid URI, then an exception will be thrown.
+The exception will contain full context and the actual parse error.
 
 If some refined text value or `URI` is known statically at compile time, we
 can use Template Haskell, namely the “quasi quotes” feature. To do so import
 the `Text.URI.QQ` module and enable the `QuasiQuotes` language extension,
 like so:
 
-```
+```haskell
 λ> :set -XQuasiQuotes
 λ> import qualified Text.URI.QQ as QQ
 λ> let uri = [QQ.uri|https://markkarpov.com|]
