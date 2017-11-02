@@ -146,7 +146,7 @@ page](https://hackage.haskell.org/package/megaparsec).
 
 ### Inspection and manipulation
 
-Although one could use record syntax directly, possibly with a language
+Although one could use record syntax directly, possibly with language
 extensions like `RecordWildcards`, the best way to inspect and edit parts of
 `URI` is with lenses. The lenses can be found in the `Text.URI.Lens` module.
 If you have never used the
