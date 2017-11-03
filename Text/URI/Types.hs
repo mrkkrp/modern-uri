@@ -27,6 +27,7 @@ module Text.URI.Types
   , Authority (..)
   , UserInfo (..)
   , QueryParam (..)
+  , ParseException (..)
     -- * Refined text
   , RText
   , RTextLabel (..)
@@ -167,6 +168,18 @@ instance Arbitrary QueryParam where
     , QueryParam <$> arbitrary <*> arbitrary ]
 
 instance NFData QueryParam
+
+-- | Parse exception thrown by 'mkURI' when a given 'Text' value cannot be
+-- parsed as a 'URI'.
+
+data ParseException = ParseException Text (ParseError Char Void)
+  -- ^ Arguments are: original input and parse error
+  deriving (Show, Eq, Data, Typeable, Generic)
+
+instance Exception ParseException where
+  displayException (ParseException s e) = parseErrorPretty' s e
+
+instance NFData ParseException
 
 ----------------------------------------------------------------------------
 -- Refined text

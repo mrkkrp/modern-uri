@@ -1,3 +1,7 @@
+## Modern URI 0.1.1.0
+
+* Derived `NFData` for `ParseException`.
+
 ## Modern URI 0.1.0.1
 
 * Updated the readme to include “Quick start” instructions and some

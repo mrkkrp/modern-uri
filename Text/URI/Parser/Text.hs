@@ -9,29 +9,23 @@
 --
 -- URI parser for strict 'Text', an internal module.
 
-{-# LANGUAGE DataKinds          #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE FlexibleContexts   #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE RankNTypes         #-}
-{-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Text.URI.Parser.Text
   ( mkURI
-  , parser
-  , ParseException (..) )
+  , parser )
 where
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Catch (Exception (..), MonadThrow (..))
-import Data.Data (Data)
+import Control.Monad.Catch (MonadThrow (..))
 import Data.Maybe (isJust, catMaybes)
 import Data.Text (Text)
-import Data.Typeable (Typeable)
 import Data.Void
-import GHC.Generics
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.URI.Parser.Text.Utils
@@ -52,16 +46,6 @@ mkURI input =
   case runParser (parser <* eof :: Parsec Void Text URI) "" input of
     Left err -> throwM (ParseException input err)
     Right x  -> return x
-
--- | Parse exception thrown by 'mkURI' when a given 'Text' value cannot be
--- parsed as a 'URI'.
-
-data ParseException = ParseException Text (ParseError Char Void)
-  -- ^ Arguments are: original input and parse error
-  deriving (Show, Eq, Data, Typeable, Generic)
-
-instance Exception ParseException where
-  displayException (ParseException s e) = parseErrorPretty' s e
 
 -- | This parser can be used to parse 'URI' from strict 'Text'. Remember to
 -- use a concrete non-polymorphic parser type for efficiency.
