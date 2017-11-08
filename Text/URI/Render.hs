@@ -9,12 +9,14 @@
 --
 -- URI renders, an internal module.
 
-{-# LANGUAGE ConstraintKinds   #-}
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE ConstraintKinds     #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Text.URI.Render
   ( render
@@ -30,6 +32,7 @@ import Data.Char (chr, intToDigit)
 import Data.List (intersperse)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Monoid
+import Data.Proxy
 import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Word (Word8)
@@ -56,8 +59,8 @@ render = TL.toStrict . TLB.toLazyText . render'
 -- | Render a given 'URI' value as a 'TLB.Builder'.
 
 render' :: URI -> TLB.Builder
-render' = genericRender TLB.decimal $ \e ->
-  TLB.fromText . percentEncode e . unRText
+render' = genericRender TLB.decimal $
+  TLB.fromText . percentEncode
 
 -- | Render a given 'URI' value as a strict 'ByteString'.
 
@@ -67,8 +70,8 @@ renderBs = BL.toStrict . BLB.toLazyByteString . renderBs'
 -- | Render a given 'URI' value as a 'BLB.Builder'.
 
 renderBs' :: URI -> BLB.Builder
-renderBs' = genericRender BLB.wordDec $ \e ->
-  BLB.byteString . TE.encodeUtf8 . percentEncode e . unRText
+renderBs' = genericRender BLB.wordDec $
+  BLB.byteString . TE.encodeUtf8 . percentEncode
 
 -- | Render a given 'URI' value as a 'String'.
 --
@@ -82,22 +85,13 @@ renderStr = ($ []) . renderStr'
 -- @since 0.0.2.0
 
 renderStr' :: URI -> ShowS
-renderStr' = toShowS . genericRender (DString . showInt) (\e ->
-  fromString . T.unpack . percentEncode e . unRText)
+renderStr' = toShowS . genericRender (DString . showInt)
+  (fromString . T.unpack . percentEncode)
 
 ----------------------------------------------------------------------------
 -- Generic render
 
--- | Percent encoding options.
-
-data Escaping
-  = N                  -- ^ No escaping
-  | P                  -- ^ Path-piece style, do not encode @:@ and @\@@
-  | PQ                 -- ^ Mixed style, encode @:@ but not @\@@
-  | Q                  -- ^ Query string style, encode @:@ and @\@@
-  deriving (Eq)
-
-type Render a b = (forall l. Escaping -> RText l -> b) -> a -> b
+type Render a b = (forall l. RLabel l => RText l -> b) -> a -> b
 type R        b = (Monoid b, IsString b)
 
 genericRender :: R b => (Word -> b) -> Render URI b
@@ -113,23 +107,21 @@ rJust :: Monoid m => (a -> m) -> Maybe a -> m
 rJust = maybe mempty
 
 rScheme :: R b => Render (RText 'Scheme) b
-rScheme r = (<> ":") . r Q
+rScheme r = (<> ":") . r
 {-# INLINE rScheme #-}
 
 rAuthority :: R b => (Word -> b) -> Render Authority b
 rAuthority d r Authority {..} = mconcat
   [ "//"
   , rJust (rUserInfo r) authUserInfo
-  , if T.head (unRText authHost) == '['
-      then r N authHost
-      else r Q authHost
+  , r authHost
   , rJust ((":" <>) . d) authPort ]
 {-# INLINE rAuthority #-}
 
 rUserInfo :: R b => Render UserInfo b
 rUserInfo r UserInfo {..} = mconcat
-  [ r Q uiUsername
-  , rJust ((":" <>) . r Q) uiPassword
+  [ r uiUsername
+  , rJust ((":" <>) . r) uiPassword
   , "@" ]
 {-# INLINE rUserInfo #-}
 
@@ -139,8 +131,8 @@ rPath isAbsolute r ps' = leading <> other
     leading = if isAbsolute then "/" else mempty
     other   = mconcat . intersperse "/" $
       case (isAbsolute, ps') of
-        (False, p:ps) -> r PQ p : fmap (r P) ps
-        _             -> r P <$> ps'
+        (False, p:ps) -> r p : fmap r ps
+        _             -> r <$> ps'
 {-# INLINE rPath #-}
 
 rQuery :: R b => Render [QueryParam] b
@@ -151,12 +143,12 @@ rQuery r = \case
 
 rQueryParam :: R b => Render QueryParam b
 rQueryParam r = \case
-  QueryFlag flag -> r P flag
-  QueryParam k v -> r P k <> "=" <> r P v
+  QueryFlag flag -> r flag
+  QueryParam k v -> r k <> "=" <> r v
 {-# INLINE rQueryParam #-}
 
 rFragment :: R b => Render (RText 'Fragment) b
-rFragment r = ("#" <>) . r P
+rFragment r = ("#" <>) . r
 {-# INLINE rFragment #-}
 
 ----------------------------------------------------------------------------
@@ -179,43 +171,83 @@ instance IsString DString where
 
 -- | Percent-encode a 'Text' value.
 
-percentEncode
-  :: Escaping          -- ^ Whether to leave @':'@ and @'@'@ unescaped
-  -> Text              -- ^ Input text to encode
+percentEncode :: forall l. RLabel l
+  => RText l           -- ^ Input text to encode
   -> Text              -- ^ Percent-encoded text
-percentEncode e txt = T.unfoldrN n f (bs, [])
+percentEncode rtxt =
+  if skipEscaping (Proxy :: Proxy l) txt
+    then txt
+    else T.unfoldr f (TE.encodeUtf8 txt, [])
   where
     f (bs', []) =
       case B.uncons bs' of
         Nothing -> Nothing
         Just (w, bs'') -> Just $
-          if isUnreserved e w
+          if nne w
             then (chr (fromIntegral w), (bs'', []))
             else let c:|cs = encodeByte w
                  in (c, (bs'', cs))
     f (bs', x:xs) = Just (x, (bs', xs))
-    bs = TE.encodeUtf8 txt
-    n  = B.foldl' (\n' w -> g w + n') 0 bs
-    g x = if isUnreserved e x then 1 else 3
     encodeByte x = '%' :| [intToDigit h, intToDigit l]
       where
         (h, l) = fromIntegral x `quotRem` 16
+    nne = needsNoEscaping (Proxy :: Proxy l)
+    txt = unRText rtxt
 
--- | The predicate selects unreserved bytes.
+-- | This type class attaches a predicate that tells which bytes should not
+-- be percent-encoded to the type level label of kind 'RTextLabel'.
 
-isUnreserved :: Escaping -> Word8 -> Bool
-isUnreserved N _ = True
-isUnreserved t x
+class RLabel (l :: RTextLabel) where
+
+  -- | The predicate selects bytes that do not to be percent-escaped in
+  -- rendered URI.
+
+  needsNoEscaping :: Proxy l -> Word8 -> Bool
+
+  -- | Whether to skip percent-escaping altogether for this value.
+
+  skipEscaping :: Proxy l -> Text -> Bool
+  skipEscaping Proxy _ = False
+
+instance RLabel 'Scheme where
+  needsNoEscaping Proxy x =
+    isAlphaNum x || x == 43 || x == 45 || x == 46
+
+instance RLabel 'Host where
+  needsNoEscaping Proxy x = undefined
+  skipEscaping Proxy x = T.head x == '['
+
+instance RLabel 'Username where
+  needsNoEscaping Proxy x = undefined
+
+instance RLabel 'Password where
+  needsNoEscaping Proxy x = undefined
+
+instance RLabel 'PathPiece where
+  needsNoEscaping Proxy x = undefined
+
+instance RLabel 'QueryKey where
+  needsNoEscaping Proxy x = undefined
+
+instance RLabel 'QueryValue where
+  needsNoEscaping Proxy x = undefined
+
+instance RLabel 'Fragment where
+  needsNoEscaping Proxy x = undefined
+
+isAlphaNum :: Word8 -> Bool
+isAlphaNum x
   | x >= 65 && x <= 90  = True -- 'A'..'Z'
   | x >= 97 && x <= 122 = True -- 'a'..'z'
   | x >= 48 && x <= 57  = True -- '0'..'9'
-  | x == 45             = True -- '-'
-  | x == 95             = True -- '_'
-  | x == 46             = True -- '.'
-  | x == 126            = True -- '~'
-  | colon && x == 58    = True -- ':'
-  | at   && x == 64     = True -- '@'
   | otherwise           = False
-  where
-    colon = t == P
-    at    = t == P || t == PQ
+
+-- isUnreserved :: Word8 -> Bool
+-- isUnreserved t x
+--   | x == 45             = True -- '-'
+--   | x == 95             = True -- '_'
+--   | x == 46             = True -- '.'
+--   | x == 126            = True -- '~'
+--   | colon && x == 58    = True -- ':'
+--   | at   && x == 64     = True -- '@'
+--   | otherwise           = False
