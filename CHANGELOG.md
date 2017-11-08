@@ -2,6 +2,11 @@
 
 * Derived `NFData` for `ParseException`.
 
+* Adjusted percent-encoding in renders so it's only used when absolutely
+  necessary. Previously we percent-escaped a bit too much, which, strictly
+  speaking, did not make the renders incorrect, but that didn't look nice
+  either.
+
 ## Modern URI 0.1.0.1
 
 * Updated the readme to include “Quick start” instructions and some
