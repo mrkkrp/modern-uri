@@ -210,30 +210,45 @@ class RLabel (l :: RTextLabel) where
   skipEscaping Proxy _ = False
 
 instance RLabel 'Scheme where
-  needsNoEscaping Proxy x =
-    isAlphaNum x || x == 43 || x == 45 || x == 46
+  needsNoEscaping Proxy x = isAlphaNum x || x == 43 || x == 45 || x == 46
 
 instance RLabel 'Host where
-  needsNoEscaping Proxy x = undefined
+  needsNoEscaping Proxy x = isUnreserved x || isDelim x
   skipEscaping Proxy x = T.head x == '['
 
 instance RLabel 'Username where
-  needsNoEscaping Proxy x = undefined
+  needsNoEscaping Proxy x = isUnreserved x || isDelim x
 
 instance RLabel 'Password where
-  needsNoEscaping Proxy x = undefined
+  needsNoEscaping Proxy x = isUnreserved x || isDelim x || x == 58
 
 instance RLabel 'PathPiece where
-  needsNoEscaping Proxy x = undefined
+  needsNoEscaping Proxy = isPChar isDelim
 
 instance RLabel 'QueryKey where
-  needsNoEscaping Proxy x = undefined
+  needsNoEscaping Proxy x =
+    isPChar isDelim' x || x == 47 || x == 63
 
 instance RLabel 'QueryValue where
-  needsNoEscaping Proxy x = undefined
+  needsNoEscaping Proxy x =
+    isPChar isDelim' x || x == 47 || x == 63
 
 instance RLabel 'Fragment where
-  needsNoEscaping Proxy x = undefined
+  needsNoEscaping Proxy x =
+    isPChar isDelim x || x == 47 || x == 63
+
+isPChar :: (Word8 -> Bool) -> Word8 -> Bool
+isPChar f x = isUnreserved x || f x || x == 58 || x == 64
+
+isUnreserved :: Word8 -> Bool
+isUnreserved x = isAlphaNum x || other
+  where
+    other = case x of
+      45  -> True
+      46  -> True
+      95  -> True
+      126 -> True
+      _   -> False
 
 isAlphaNum :: Word8 -> Bool
 isAlphaNum x
@@ -242,12 +257,19 @@ isAlphaNum x
   | x >= 48 && x <= 57  = True -- '0'..'9'
   | otherwise           = False
 
--- isUnreserved :: Word8 -> Bool
--- isUnreserved t x
---   | x == 45             = True -- '-'
---   | x == 95             = True -- '_'
---   | x == 46             = True -- '.'
---   | x == 126            = True -- '~'
---   | colon && x == 58    = True -- ':'
---   | at   && x == 64     = True -- '@'
---   | otherwise           = False
+isDelim :: Word8 -> Bool
+isDelim x
+  | x == 33            = True
+  | x == 36            = True
+  | x >= 38 && x <= 44 = True
+  | x == 59            = True
+  | x == 61            = True
+  | otherwise          = False
+
+isDelim' :: Word8 -> Bool
+isDelim' x
+  | x == 33            = True
+  | x == 36            = True
+  | x >= 39 && x <= 44 = True
+  | x == 59            = True
+  | otherwise          = False
