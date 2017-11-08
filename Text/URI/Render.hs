@@ -126,13 +126,10 @@ rUserInfo r UserInfo {..} = mconcat
 {-# INLINE rUserInfo #-}
 
 rPath :: R b => Bool -> Render [RText 'PathPiece] b
-rPath isAbsolute r ps' = leading <> other
+rPath isAbsolute r ps = leading <> other
   where
     leading = if isAbsolute then "/" else mempty
-    other   = mconcat . intersperse "/" $
-      case (isAbsolute, ps') of
-        (False, p:ps) -> r p : fmap r ps
-        _             -> r <$> ps'
+    other   = mconcat . intersperse "/" $ r <$> ps
 {-# INLINE rPath #-}
 
 rQuery :: R b => Render [QueryParam] b
