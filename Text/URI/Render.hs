@@ -223,7 +223,8 @@ instance RLabel 'Password where
   needsNoEscaping Proxy x = isUnreserved x || isDelim x || x == 58
 
 instance RLabel 'PathPiece where
-  needsNoEscaping Proxy = isPChar isDelim
+  needsNoEscaping Proxy x =
+    isUnreserved x || isDelim x || x == 64
 
 instance RLabel 'QueryKey where
   needsNoEscaping Proxy x =
