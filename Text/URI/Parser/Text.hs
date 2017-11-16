@@ -35,8 +35,10 @@ import qualified Data.List.NonEmpty         as NE
 import qualified Data.Text.Encoding         as TE
 import qualified Text.Megaparsec.Char.Lexer as L
 
--- | Construct a 'URI' from 'Text'. In case of failure 'ParseException' is
--- thrown.
+-- | Construct a 'URI' from 'Text'. The input you pass to 'mkURI' must be a
+-- valid URI as per RFC 3986, that is, its components should be
+-- percent-encoded where necessary. In case of parse failure
+-- 'ParseException' is thrown.
 --
 -- This function uses the 'parser' parser under the hood, which you can also
 -- use directly in a Megaparsec parser.

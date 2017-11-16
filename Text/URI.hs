@@ -45,9 +45,11 @@ module Text.URI
   , unRText
   , RTextException (..)
     -- * Parsing
+    -- $parsing
   , parser
   , parserBs
     -- * Rendering
+    -- $rendering
   , render
   , render'
   , renderBs
@@ -75,3 +77,14 @@ import Text.URI.Types
 -- it rejects it by throwing the 'RTextException'. Remember that the 'Maybe'
 -- datatype is also an instance of 'Control.Monad.Catch.MonadThrow', and so
 -- one could as well use the smart constructors in the 'Maybe' monad.
+
+-- $parsing
+--
+-- The input you feed into the parsers must be a valid URI as per RFC 3986,
+-- that is, its components should be percent-encoded where necessary.
+
+-- $rendering
+--
+-- Rendering functions take care of constructing correct 'URI'
+-- representation as per RFC 3986, that is, percent-encoding will be applied
+-- when necessary automatically.
