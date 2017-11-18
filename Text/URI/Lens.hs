@@ -131,13 +131,13 @@ queryFlag k = to (isJust . find g)
 -- return\/modify several items at once.
 
 queryParam :: RText 'QueryKey -> Traversal' [URI.QueryParam] (RText 'QueryValue)
-queryParam k f s = go s
+queryParam k f = traverse g
   where
-    go []     = pure s
-    go (x:xs) =
-      case x of
-        QueryParam k' v -> if k == k' then f v *> go xs else go xs
-        _               -> go xs
+    g p@(QueryParam k' v) =
+      if k == k'
+        then QueryParam k' <$> f v
+        else pure p
+    g p = pure p
 
 -- | A getter that can project 'Text' from refined text values.
 

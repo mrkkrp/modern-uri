@@ -1,3 +1,7 @@
+## Modern URI 0.1.1.1
+
+* Fixed implementation of `Text.URI.Lens.queryParam` traversal.
+
 ## Modern URI 0.1.1.0
 
 * Derived `NFData` for `ParseException`.
