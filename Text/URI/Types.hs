@@ -86,7 +86,8 @@ data URI = URI
   , uriPath :: [RText 'PathPiece]
     -- ^ Path
   , uriQuery :: [QueryParam]
-    -- ^ Query parameters
+    -- ^ Query parameters, RFC 3986 does not define the inner organization
+    -- of query string, so we deconstruct it following RFC 1866 here
   , uriFragment :: Maybe (RText 'Fragment)
     -- ^ Fragment, without @#@
   } deriving (Show, Eq, Ord, Data, Typeable, Generic)
