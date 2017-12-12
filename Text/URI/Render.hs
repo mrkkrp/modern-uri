@@ -193,6 +193,7 @@ percentEncode rtxt =
     nne = needsNoEscaping (Proxy :: Proxy l)
     sap = spaceAsPlus     (Proxy :: Proxy l)
     txt = unRText rtxt
+{-# INLINE percentEncode #-}
 
 -- | This type class attaches some predicates that control serialization to
 -- the type level label of kind 'RTextLabel'.
