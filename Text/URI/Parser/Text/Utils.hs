@@ -151,11 +151,12 @@ pchar' :: MonadParsec e Text m => m Char
 pchar' = choice
   [ unreservedChar
   , percentEncChar
+  , char '+' >> pure ' '
   , oneOf s <?> "sub-delimiter"
   , char ':'
   , char '@' ]
   where
-    s = E.fromList "!$'()*+,;"
+    s = E.fromList "!$'()*,;"
 {-# INLINE pchar' #-}
 
 isAsciiAlpha :: Char -> Bool

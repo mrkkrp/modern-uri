@@ -268,6 +268,7 @@ isDelim' :: Word8 -> Bool
 isDelim' x
   | x == 33            = True
   | x == 36            = True
-  | x >= 39 && x <= 44 = True
+  | x >= 39 && x <= 42 = True
+  | x == 44            = True
   | x == 59            = True
   | otherwise          = False

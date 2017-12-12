@@ -226,11 +226,12 @@ pchar' :: MonadParsec e ByteString m => m Word8
 pchar' = choice
   [ unreservedChar
   , percentEncChar
+  , char 43 >> pure 32
   , oneOf s <?> "sub-delimiter"
   , char 58
   , char 64 ]
   where
-    s = E.fromList (fromIntegral . ord <$> "!$'()*+,;")
+    s = E.fromList (fromIntegral . ord <$> "!$'()*,;")
 {-# INLINE pchar' #-}
 
 isAsciiAlpha :: Word8 -> Bool
