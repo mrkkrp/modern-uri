@@ -1,3 +1,8 @@
+## Modern URI 0.1.2.0
+
+* Fixed handling of `+` in query strings. Now `+` is parsed as space and
+  serialized as `%2b` as per RFC 1866 (paragraph 8.2.1).
+
 ## Modern URI 0.1.1.1
 
 * Fixed implementation of `Text.URI.Lens.queryParam` traversal.
