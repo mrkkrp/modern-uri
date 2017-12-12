@@ -13,6 +13,7 @@
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -180,26 +181,33 @@ percentEncode rtxt =
       case B.uncons bs' of
         Nothing -> Nothing
         Just (w, bs'') -> Just $
-          if nne w
-            then (chr (fromIntegral w), (bs'', []))
-            else let c:|cs = encodeByte w
-                 in (c, (bs'', cs))
+          if | sap && w == 32 -> ('+', (bs'', []))
+             | nne w          -> (chr (fromIntegral w), (bs'', []))
+             | otherwise      ->
+               let c:|cs = encodeByte w
+               in (c, (bs'', cs))
     f (bs', x:xs) = Just (x, (bs', xs))
     encodeByte x = '%' :| [intToDigit h, intToDigit l]
       where
         (h, l) = fromIntegral x `quotRem` 16
     nne = needsNoEscaping (Proxy :: Proxy l)
+    sap = spaceAsPlus     (Proxy :: Proxy l)
     txt = unRText rtxt
 
--- | This type class attaches a predicate that tells which bytes should not
--- be percent-encoded to the type level label of kind 'RTextLabel'.
+-- | This type class attaches some predicates that control serialization to
+-- the type level label of kind 'RTextLabel'.
 
 class RLabel (l :: RTextLabel) where
 
-  -- | The predicate selects bytes that do not to be percent-escaped in
+  -- | The predicate selects bytes that are not to be percent-escaped in
   -- rendered URI.
 
   needsNoEscaping :: Proxy l -> Word8 -> Bool
+
+  -- | Whether to serialize space as the plus sign.
+
+  spaceAsPlus :: Proxy l -> Bool
+  spaceAsPlus Proxy = False
 
   -- | Whether to skip percent-escaping altogether for this value.
 
@@ -226,10 +234,12 @@ instance RLabel 'PathPiece where
 instance RLabel 'QueryKey where
   needsNoEscaping Proxy x =
     isPChar isDelim' x || x == 47 || x == 63
+  spaceAsPlus Proxy = True
 
 instance RLabel 'QueryValue where
   needsNoEscaping Proxy x =
     isPChar isDelim' x || x == 47 || x == 63
+  spaceAsPlus Proxy = True
 
 instance RLabel 'Fragment where
   needsNoEscaping Proxy x =
