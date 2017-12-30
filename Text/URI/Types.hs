@@ -51,6 +51,7 @@ import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.Char
 import Data.Data (Data)
 import Data.List (intercalate)
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.Maybe (fromMaybe, isJust, fromJust)
 import Data.Proxy
 import Data.Text (Text)
@@ -83,8 +84,10 @@ data URI = URI
     --
     -- __Note__: before version /0.1.0.0/ type of 'uriAuthority' was
     -- @'Maybe' 'Authority'@
-  , uriPath :: [RText 'PathPiece]
-    -- ^ Path
+  , uriPath :: Maybe (Bool, NonEmpty (RText 'PathPiece))
+    -- ^ Either 'Nothing' when no path is specified or 'Just' if the URI has a
+    -- 'Path'. The 'Bool' value in the first part of the tuple indicates whether
+    -- the path component has a trailing slash.
   , uriQuery :: [QueryParam]
     -- ^ Query parameters, RFC 3986 does not define the inner organization
     -- of query string, so we deconstruct it following RFC 1866 here
@@ -328,6 +331,9 @@ instance RLabel 'PathPiece where
 
 instance Arbitrary (RText 'PathPiece) where
   arbitrary = arbText' mkPathPiece
+
+instance Arbitrary (NonEmpty (RText 'PathPiece)) where
+  arbitrary = (:|) <$> arbitrary <*> arbitrary
 
 -- | Lift a 'Text' value into @'RText 'QueryKey'@.
 --

@@ -31,7 +31,7 @@ where
 import Data.ByteString (ByteString)
 import Data.Char (chr, intToDigit)
 import Data.List (intersperse)
-import Data.List.NonEmpty (NonEmpty (..))
+import Data.List.NonEmpty (NonEmpty (..), toList)
 import Data.Monoid
 import Data.Proxy
 import Data.String (IsString (..))
@@ -126,11 +126,14 @@ rUserInfo r UserInfo {..} = mconcat
   , "@" ]
 {-# INLINE rUserInfo #-}
 
-rPath :: R b => Bool -> Render [RText 'PathPiece] b
-rPath isAbsolute r ps = leading <> other
+rPath :: R b => Bool -> Render (Maybe (Bool, NonEmpty (RText 'PathPiece))) b
+rPath isAbsolute r p = leading <> other r p
   where
     leading = if isAbsolute then "/" else mempty
-    other   = mconcat . intersperse "/" $ r <$> ps
+    other r' (Just (True, ps))  = (mconcat . intersperse "/" $ r' <$> toList ps) <> "/"
+    other r' (Just (False, ps)) = mconcat . intersperse "/" $ r' <$> toList ps
+    other _ Nothing            = ""
+
 {-# INLINE rPath #-}
 
 rQuery :: R b => Render [QueryParam] b
