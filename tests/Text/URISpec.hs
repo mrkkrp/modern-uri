@@ -4,7 +4,9 @@
 module Text.URISpec (spec) where
 
 import Data.ByteString (ByteString)
+import Data.Foldable (traverse_)
 import Data.List.NonEmpty (fromList)
+import Data.Monoid ((<>))
 import Data.Maybe (isNothing, isJust)
 import Data.String (IsString (..))
 import Data.Text (Text)
@@ -189,6 +191,23 @@ spec = do
   describe "renderStr" $
     it "sort of works" $
       fmap URI.renderStr mkTestURI `shouldReturn` testURI
+  describe "relativeTo" $ do
+    describe "passes test cases from section 5.4 of RFC 3986 (strict)" $
+      traverse_ (\(r, e) ->
+        it ("resolves reference path '" <> T.unpack r <> "'") $ do
+          base <- URI.mkURI "http://a/b/c/d;p?q"
+          reference <- URI.mkURI r
+          expected <- URI.mkURI e
+          (reference `URI.relativeTo` base) `shouldBe` expected)
+          (testCasesRFC3986 True)
+    describe "passes test cases from section 5.4 of RFC 3986 (non-strict)" $
+      traverse_ (\(r, e) ->
+        it ("resolves reference path '" <> T.unpack r <> "'") $ do
+          base <- URI.mkURI "http://a/b/c/d;p?q"
+          reference <- URI.mkURI r
+          expected <- URI.mkURI e
+          (reference `URI.nonStrictRelativeTo` base) `shouldBe` expected)
+          (testCasesRFC3986 False)
 
 ----------------------------------------------------------------------------
 -- Helpers
@@ -264,3 +283,62 @@ shouldParseBs s a =
       "the parser is expected to succeed, but it failed with:\n" ++
       parseErrorPretty' s e
     Right a' -> a' `shouldBe` a
+
+
+-- | Test cases from section 5.4.1 from RFC 3986
+--
+-- First item in the tuple is the relative path, the second is the expected
+-- result. The base path is always 'http://a/b/c/d;p?q'.
+--
+testCasesRFC3986 :: Bool -- ^ Strict or non-strict
+                 -> [(T.Text, T.Text)]
+testCasesRFC3986 strict = [
+      -- Normal examples
+      ("g:h",     "g:h"),
+      ("g",       "http://a/b/c/g"),
+      ("./g",     "http://a/b/c/g"),
+      ("g/",      "http://a/b/c/g/"),
+      ("/g",      "http://a/g"),
+      ("//g",     "http://g"),
+      ("?y",      "http://a/b/c/d;p?y"),
+      ("g?y",     "http://a/b/c/g?y"),
+      ("#s",      "http://a/b/c/d;p?q#s"),
+      ("g#s",     "http://a/b/c/g#s"),
+      ("g?y#s",   "http://a/b/c/g?y#s"),
+      (";x",      "http://a/b/c/;x"),
+      ("g;x",     "http://a/b/c/g;x"),
+      ("g;x?y#s", "http://a/b/c/g;x?y#s"),
+      ("",        "http://a/b/c/d;p?q"),
+      (".",       "http://a/b/c/"),
+      ("./",      "http://a/b/c/"),
+      ("..",      "http://a/b/"),
+      ("../",     "http://a/b/"),
+      ("../g",    "http://a/b/g"),
+      ("../..",   "http://a/"),
+      ("../../",  "http://a/"),
+      ("../../g", "http://a/g"),
+      -- Abnormal cases
+      ("../../../g",    "http://a/g"),
+      ("../../../../g", "http://a/g"),
+      -- Dot segments
+      ("/./g",    "http://a/g"),
+      ("/../g",   "http://a/g"),
+      ("g.",      "http://a/b/c/g."),
+      (".g",      "http://a/b/c/.g"),
+      ("g..",     "http://a/b/c/g.."),
+      ("..g",     "http://a/b/c/..g"),
+      -- Nonsensical forms of the "." and ".."
+      ("./../g",     "http://a/b/g"),
+      ("./g/.",      "http://a/b/c/g/"),
+      ("g/./h",      "http://a/b/c/g/h"),
+      ("g/../h",     "http://a/b/c/h"),
+      ("g;x=1/./y",  "http://a/b/c/g;x=1/y"),
+      ("g;x=1/../y", "http://a/b/c/y"),
+      -- Query and/or fragment components
+      ("g?y/./x",  "http://a/b/c/g?y/./x"),
+      ("g?y/../x", "http://a/b/c/g?y/../x"),
+      ("g#s/./x",  "http://a/b/c/g#s/./x"),
+      ("g#s/../x", "http://a/b/c/g#s/../x"),
+      -- Strict vs non-strict
+      ("http:g", if strict then "http:g" else "http://a/b/c/g")
+    ]

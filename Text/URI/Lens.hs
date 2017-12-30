@@ -56,7 +56,7 @@ uriAuthority f s = (\x -> s { URI.uriAuthority = x }) <$> f (URI.uriAuthority s)
 
 -- | 'URI' path lens.
 
-uriPath :: Lens' URI (Maybe (Bool, (NonEmpty (RText 'PathPiece))))
+uriPath :: Lens' URI (Maybe (Bool, NonEmpty (RText 'PathPiece)))
 uriPath f s = (\x -> s { URI.uriPath = x }) <$> f (URI.uriPath s)
 
 -- | A getter that can tell if path component of a 'URI' is absolute.
