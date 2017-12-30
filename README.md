@@ -66,7 +66,7 @@ it manually like so:
 λ> host <- URI.mkHost "markkarpov.com"
 λ> host
 "markkarpov.com"
-λ> let uri = URI.URI (Just scheme) (Right (URI.Authority Nothing host Nothing)) [] [] Nothing
+λ> let uri = URI.URI (Just scheme) (Right (URI.Authority Nothing host Nothing)) Nothing [] Nothing
 λ> uri
 URI
   { uriScheme = Just "https"
@@ -75,7 +75,7 @@ URI
         { authUserInfo = Nothing
         , authHost = "markkarpov.com"
         , authPort = Nothing })
-  , uriPath = []
+  , uriPath = Nothing
   , uriQuery = []
   , uriFragment = Nothing }
 ```
@@ -101,7 +101,7 @@ URI
         { authUserInfo = Nothing
         , authHost = "markkarpov.com"
         , authPort = Nothing })
-  , uriPath = []
+  , uriPath = Nothing
   , uriQuery = []
   , uriFragment = Nothing }
 ```
@@ -126,7 +126,7 @@ URI
         { authUserInfo = Nothing
         , authHost = "markkarpov.com"
         , authPort = Nothing })
-  , uriPath = []
+  , uriPath = Nothing
   , uriQuery = []
   , uriFragment = Nothing }
 ```
@@ -189,10 +189,10 @@ the following options are available:
 * `renderStr` can be used to render to `String`. Sometimes it's handy. The
   render uses difference lists internally so it's not that slow, but in
   general I'd advise avoiding `String`s.
-* `rederStr'` returns `ShowS`, which is just a synonym for `String ->
-  String`—a function that prepends result of rendering to a given `String`.
-  This is useful when the `URI` you want to render is a part of a bigger
-  output, just like with the builders mentioned above.
+* `renderStr'` returns `ShowS`, which is just a synonym for `String ->
+  String`—a function that prepends the result of rendering to a given
+  `String`. This is useful when the `URI` you want to render is a part of a
+  bigger output, just like with the builders mentioned above.
 
 Examples:
 

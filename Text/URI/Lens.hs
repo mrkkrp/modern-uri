@@ -9,15 +9,17 @@
 --
 -- Lenses for working with the 'URI' data type and its internals.
 
-{-# LANGUAGE DataKinds  #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE DataKinds     #-}
+{-# LANGUAGE LambdaCase    #-}
+{-# LANGUAGE RankNTypes    #-}
+{-# LANGUAGE TupleSections #-}
 
 module Text.URI.Lens
   ( uriScheme
   , uriAuthority
   , uriPath
   , isPathAbsolute
+  , uriTrailingSlash
   , uriQuery
   , uriFragment
   , authUserInfo
@@ -32,13 +34,15 @@ module Text.URI.Lens
   , unRText )
 where
 
+import Control.Applicative (liftA2)
 import Data.Foldable (find)
 import Data.Functor.Contravariant
 import Data.Maybe (isJust)
 import Data.Profunctor
 import Data.Text (Text)
 import Text.URI.Types (URI, Authority, UserInfo, QueryParam (..), RText, RTextLabel (..))
-import qualified Text.URI.Types as URI
+import qualified Data.List.NonEmpty as NE
+import qualified Text.URI.Types     as URI
 
 -- | 'URI' scheme lens.
 
@@ -56,7 +60,11 @@ uriAuthority f s = (\x -> s { URI.uriAuthority = x }) <$> f (URI.uriAuthority s)
 -- | 'URI' path lens.
 
 uriPath :: Lens' URI [RText 'PathPiece]
-uriPath f s = (\x -> s { URI.uriPath = x }) <$> f (URI.uriPath s)
+uriPath f s = (\x -> s { URI.uriPath = (ts,) <$> NE.nonEmpty x }) <$> f ps
+  where
+    ts = maybe False fst path
+    ps = maybe [] (NE.toList . snd) path
+    path = URI.uriPath s
 
 -- | A getter that can tell if path component of a 'URI' is absolute.
 --
@@ -64,6 +72,18 @@ uriPath f s = (\x -> s { URI.uriPath = x }) <$> f (URI.uriPath s)
 
 isPathAbsolute :: Getter URI Bool
 isPathAbsolute = to URI.isPathAbsolute
+
+-- | A 0-1 traversal allowing to view and manipulate trailing slash.
+--
+-- @since 0.2.0.0
+
+uriTrailingSlash :: Traversal' URI Bool
+uriTrailingSlash f s =
+  (\x -> s { URI.uriPath = liftA2 (,) x ps }) <$> traverse f ts
+  where
+    ts = fst <$> path
+    ps = snd <$> path
+    path = URI.uriPath s
 
 -- | 'URI' query params lens.
 

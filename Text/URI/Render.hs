@@ -42,6 +42,7 @@ import Text.URI.Types
 import qualified Data.ByteString              as B
 import qualified Data.ByteString.Lazy         as BL
 import qualified Data.ByteString.Lazy.Builder as BLB
+import qualified Data.List.NonEmpty           as NE
 import qualified Data.Semigroup               as S
 import qualified Data.Text                    as T
 import qualified Data.Text.Encoding           as TE
@@ -126,11 +127,16 @@ rUserInfo r UserInfo {..} = mconcat
   , "@" ]
 {-# INLINE rUserInfo #-}
 
-rPath :: R b => Bool -> Render [RText 'PathPiece] b
-rPath isAbsolute r ps = leading <> other
+rPath :: R b => Bool -> Render (Maybe (Bool, NonEmpty (RText 'PathPiece))) b
+rPath isAbsolute r path = leading <> other
   where
     leading = if isAbsolute then "/" else mempty
-    other   = mconcat . intersperse "/" $ r <$> ps
+    other =
+      case path of
+        Nothing -> mempty
+        Just (trailingSlash, ps) ->
+          (mconcat . intersperse "/" . fmap r . NE.toList) ps
+          <> if trailingSlash then "/" else mempty
 {-# INLINE rPath #-}
 
 rQuery :: R b => Render [QueryParam] b

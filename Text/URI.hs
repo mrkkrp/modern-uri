@@ -20,12 +20,17 @@
 -- "Text.URI.QQ" for quasi-quoters for compile-time validation of URIs and
 -- refined text components.
 
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
+
 module Text.URI
   ( -- * Data types
     URI (..)
   , mkURI
   , makeAbsolute
   , isPathAbsolute
+  , relativeTo
   , Authority (..)
   , UserInfo (..)
   , QueryParam (..)
@@ -58,10 +63,15 @@ module Text.URI
   , renderStr' )
 where
 
+import Data.Either (isLeft)
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (isJust, isNothing)
+import Data.Semigroup ((<>))
 import Text.URI.Parser.ByteString
 import Text.URI.Parser.Text
 import Text.URI.Render
 import Text.URI.Types
+import qualified Data.List.NonEmpty as NE
 
 -- $rtext
 --
@@ -88,3 +98,67 @@ import Text.URI.Types
 -- Rendering functions take care of constructing correct 'URI'
 -- representation as per RFC 3986, that is, percent-encoding will be applied
 -- when necessary automatically.
+
+-- | @'relativeTo' reference base@ makes the @reference@ 'URI' absolute
+-- resolving it against the @base@ 'URI'.
+--
+-- If the base 'URI' is not absolute itself (that is, it has no scheme),
+-- this function returns 'Nothing'.
+--
+-- See also: <https://tools.ietf.org/html/rfc3986#section-5.2>.
+--
+-- @since 0.2.0.0
+
+relativeTo
+  :: URI               -- ^ Reference 'URI' to make absolute
+  -> URI               -- ^ Base 'URI'
+  -> Maybe URI         -- ^ The target 'URI'
+relativeTo r base =
+  case uriScheme base of
+    Nothing -> Nothing
+    Just bscheme -> Just $
+      if isJust (uriScheme r)
+        then r { uriPath = uriPath r >>= removeDotSegments }
+        else r
+          { uriScheme    = Just bscheme
+          , uriAuthority =
+              case uriAuthority r of
+                Right auth -> Right auth
+                Left  rabs ->
+                  case uriAuthority base of
+                    Right auth -> Right auth
+                    Left  babs -> Left (babs || rabs)
+          , uriPath      = (>>= removeDotSegments) $
+              if isPathAbsolute r
+                then uriPath r
+                else case (uriPath base, uriPath r) of
+                  (Nothing, Nothing) -> Nothing
+                  (Just b', Nothing) -> Just b'
+                  (Nothing, Just r') -> Just r'
+                  (Just (bt, bps), Just (rt, rps)) ->
+                    fmap (rt,) . NE.nonEmpty $
+                      (if bt then NE.toList bps else NE.init bps) <>
+                      NE.toList rps
+          , uriQuery     =
+              if isLeft (uriAuthority r) &&
+                 isNothing (uriPath r)   &&
+                 null (uriQuery r)
+                then uriQuery base
+                else uriQuery r
+          }
+
+----------------------------------------------------------------------------
+-- Helpers
+
+-- | Remove dot segments from a path.
+
+removeDotSegments
+  :: (Bool, NonEmpty (RText 'PathPiece))
+  -> Maybe (Bool, NonEmpty (RText 'PathPiece))
+removeDotSegments (trailSlash, path) = go [] (NE.toList path) trailSlash
+  where
+    go out []     ts = (fmap (ts,) . NE.nonEmpty . reverse) out
+    go out (x:xs) ts
+      | unRText x == "."  = go out          xs (null xs || ts)
+      | unRText x == ".." = go (drop 1 out) xs (null xs || ts)
+      | otherwise         = go (x:out)      xs ts

@@ -3,8 +3,11 @@
 
 module Text.URISpec (spec) where
 
+import Control.Monad
 import Data.ByteString (ByteString)
+import Data.List.NonEmpty (fromList)
 import Data.Maybe (isNothing, isJust)
+import Data.Monoid ((<>))
 import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Void
@@ -188,6 +191,32 @@ spec = do
   describe "renderStr" $
     it "sort of works" $
       fmap URI.renderStr mkTestURI `shouldReturn` testURI
+  describe "relativeTo" $ do
+    let testResolution r e = do
+          base      <- URI.mkURI "http://a/b/c/d;p?q"
+          reference <- URI.mkURI r
+          expected  <- URI.mkURI e
+          URI.relativeTo reference base `shouldBe` Just expected
+    context "when reference URI has no scheme" $
+      forM_ resolutionTests $ \(r, e) ->
+        it ("resolves reference path \"" <> T.unpack r <> "\"") $
+          testResolution r e
+    context "when reference URI has scheme" $ do
+      context "when the scheme is the same as the scheme of base URI" $
+        it "reference URI is preserved intact" $
+          testResolution "http:g" "http:g"
+      context "when the scheme is different from the scheme of base URI" $
+        it "reference URI is preserved intact" $
+          testResolution "ftp:g" "ftp:g"
+    context "when base URI has no scheme" $
+      it "returns Nothing" $
+        property $ \reference base -> isNothing (uriScheme base) ==>
+          URI.relativeTo reference base `shouldBe` Nothing
+    context "when base URI has scheme" $
+      it "the resulting URI always has scheme" $
+        property $ \reference base -> isJust (uriScheme base) ==> do
+          let scheme = URI.relativeTo reference base >>= uriScheme
+          scheme `shouldSatisfy` isJust
 
 ----------------------------------------------------------------------------
 -- Helpers
@@ -212,7 +241,7 @@ mkTestURI = do
         , URI.uiPassword = Just password }
       , URI.authHost = host
       , URI.authPort = Just 443 }
-    , uriPath = path
+    , uriPath = Just (False, fromList path)
     , uriQuery = [URI.QueryParam k v]
     , uriFragment = Just fragment }
 
@@ -263,3 +292,58 @@ shouldParseBs s a =
       "the parser is expected to succeed, but it failed with:\n" ++
       parseErrorPretty' s e
     Right a' -> a' `shouldBe` a
+
+-- | Test cases from section 5.4.1 from RFC 3986.
+--
+-- First item in the tuple is the relative path, the second is the expected
+-- result. The base path is always @http://a/b/c/d;p?q@.
+
+resolutionTests :: [(Text, Text)]
+resolutionTests =
+  [ -- Normal examples
+    ("g:h",     "g:h")
+  , ("g",       "http://a/b/c/g")
+  , ("./g",     "http://a/b/c/g")
+  , ("g/",      "http://a/b/c/g/")
+  , ("/g",      "http://a/g")
+  , ("//g",     "http://g")
+  , ("?y",      "http://a/b/c/d;p?y")
+  , ("g?y",     "http://a/b/c/g?y")
+  , ("#s",      "http://a/b/c/d;p?q#s")
+  , ("g#s",     "http://a/b/c/g#s")
+  , ("g?y#s",   "http://a/b/c/g?y#s")
+  , (";x",      "http://a/b/c/;x")
+  , ("g;x",     "http://a/b/c/g;x")
+  , ("g;x?y#s", "http://a/b/c/g;x?y#s")
+  , ("",        "http://a/b/c/d;p?q")
+  , (".",       "http://a/b/c/")
+  , ("./",      "http://a/b/c/")
+  , ("..",      "http://a/b/")
+  , ("../",     "http://a/b/")
+  , ("../g",    "http://a/b/g")
+  , ("../..",   "http://a/")
+  , ("../../",  "http://a/")
+  , ("../../g", "http://a/g")
+    -- Abnormal cases
+  , ("../../../g",    "http://a/g")
+  , ("../../../../g", "http://a/g")
+    -- Dot segments
+  , ("/./g",    "http://a/g")
+  , ("/../g",   "http://a/g")
+  , ("g.",      "http://a/b/c/g.")
+  , (".g",      "http://a/b/c/.g")
+  , ("g..",     "http://a/b/c/g..")
+  , ("..g",     "http://a/b/c/..g")
+    -- Nonsensical forms of the "." and ".."
+  , ("./../g",     "http://a/b/g")
+  , ("./g/.",      "http://a/b/c/g/")
+  , ("g/./h",      "http://a/b/c/g/h")
+  , ("g/../h",     "http://a/b/c/h")
+  , ("g;x=1/./y",  "http://a/b/c/g;x=1/y")
+  , ("g;x=1/../y", "http://a/b/c/y")
+    -- Query and/or fragment components
+  , ("g?y/./x",  "http://a/b/c/g?y/./x")
+  , ("g?y/../x", "http://a/b/c/g?y/../x")
+  , ("g#s/./x",  "http://a/b/c/g#s/./x")
+  , ("g#s/../x", "http://a/b/c/g#s/../x")
+  ]

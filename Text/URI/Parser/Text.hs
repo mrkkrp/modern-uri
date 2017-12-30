@@ -23,6 +23,8 @@ where
 
 import Control.Monad
 import Control.Monad.Catch (MonadThrow (..))
+import Control.Monad.State.Strict
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (isJust, catMaybes)
 import Data.Text (Text)
 import Data.Void
@@ -98,16 +100,26 @@ pUserInfo = try $ do
   return UserInfo {..}
 {-# INLINE pUserInfo #-}
 
-pPath :: MonadParsec e Text m => Bool -> m (Bool, [RText 'PathPiece])
+pPath :: MonadParsec e Text m
+  => Bool
+  -> m (Bool, Maybe (Bool, NonEmpty (RText 'PathPiece)))
 pPath hasAuth = do
   doubleSlash <- lookAhead (option False (True <$ string "//"))
   when (doubleSlash && not hasAuth) $
     (unexpected . Tokens . NE.fromList) "//"
   absPath <- option False (True <$ char '/')
-  path <- flip sepBy (char '/') . label "path piece" $
-    many pchar
-  pieces <- mapM (liftR mkPathPiece) (filter (not . null) path)
-  return (absPath, pieces)
+  (rawPieces, trailingSlash) <- flip runStateT False $
+    flip sepBy (char '/') . label "path piece" $ do
+      x <- many pchar
+      put (null x)
+      return x
+  pieces <- mapM (liftR mkPathPiece) (filter (not . null) rawPieces)
+  return
+    ( absPath
+    , case NE.nonEmpty pieces of
+        Nothing -> Nothing
+        Just ps -> Just (trailingSlash, ps)
+    )
 {-# INLINE pPath #-}
 
 pQuery :: MonadParsec e Text m => m [QueryParam]

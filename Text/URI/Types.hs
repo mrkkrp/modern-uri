@@ -18,6 +18,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
 
 module Text.URI.Types
   ( -- * Data types
@@ -51,6 +52,7 @@ import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.Char
 import Data.Data (Data)
 import Data.List (intercalate)
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.Maybe (fromMaybe, isJust, fromJust)
 import Data.Proxy
 import Data.Text (Text)
@@ -59,11 +61,12 @@ import Data.Void
 import Data.Word (Word8, Word16)
 import GHC.Generics
 import Numeric (showInt, showHex)
-import Test.QuickCheck hiding (label)
+import Test.QuickCheck
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.URI.Parser.Text.Utils (pHost)
-import qualified Data.Text as T
+import qualified Data.List.NonEmpty as NE
+import qualified Data.Text          as T
 
 ----------------------------------------------------------------------------
 -- Data types
@@ -83,8 +86,13 @@ data URI = URI
     --
     -- __Note__: before version /0.1.0.0/ type of 'uriAuthority' was
     -- @'Maybe' 'Authority'@
-  , uriPath :: [RText 'PathPiece]
-    -- ^ Path
+  , uriPath :: Maybe (Bool, NonEmpty (RText 'PathPiece))
+    -- ^ 'Nothing' represents the empty path, while 'Just' contains an
+    -- indication 'Bool' whether the path component has a trailing slash,
+    -- and the collection of path pieces @'NonEmpty' ('RText' 'PathPiece')@.
+    --
+    -- __Note__: before version /0.2.0.0/ type of 'uriPath' was @['RText'
+    -- 'PathPiece']@.
   , uriQuery :: [QueryParam]
     -- ^ Query parameters, RFC 3986 does not define the inner organization
     -- of query string, so we deconstruct it following RFC 1866 here
@@ -96,7 +104,9 @@ instance Arbitrary URI where
   arbitrary = URI
     <$> arbitrary
     <*> arbitrary
-    <*> arbitrary
+    <*> (do mpieces <- NE.nonEmpty <$> arbitrary
+            trailingSlash <- arbitrary
+            return ((trailingSlash,) <$> mpieces))
     <*> arbitrary
     <*> arbitrary
 
@@ -328,6 +338,9 @@ instance RLabel 'PathPiece where
 
 instance Arbitrary (RText 'PathPiece) where
   arbitrary = arbText' mkPathPiece
+
+instance Arbitrary (NonEmpty (RText 'PathPiece)) where
+  arbitrary = (:|) <$> arbitrary <*> arbitrary
 
 -- | Lift a 'Text' value into @'RText 'QueryKey'@.
 --

@@ -1,3 +1,14 @@
+## Modern URI 0.2.0.0
+
+* Changed the type of `uriPath` field of the `URI` record from `[RText
+  'PathPiece]` to `Maybe (Bool, NonEmpty (RText 'PathPiece))`. This allows
+  us to store whether there is a trailing slash in the path or not. See the
+  updated documentation for more information.
+
+* Added the `relativeTo` function.
+
+* Added the `uriTrailingSlash` 0-1 traversal in `Text.URI.Lens`.
+
 ## Modern URI 0.1.2.1
 
 * Allow Megaparsec 6.4.0.
