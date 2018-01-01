@@ -26,6 +26,8 @@ The `modern-uri` package features:
   handled by the parsers and renders for you.
 * Absolute and relative URIs differ only by the scheme component: if it's
   `Nothing`, then URI is relative, otherwise it's absolute.
+* Relative `URI` can be resolved to an absolute base URI using the
+  `relativeTo` function.
 * Megaparsec parser that can be used as a standalone smart constructor for
   the `URI` data type (see `mkURI`) as well as be seamlessly integrated into
   a bigger Megaparsec parser that consumes strict `Text` (see `parser`) or
@@ -66,7 +68,7 @@ it manually like so:
 λ> host <- URI.mkHost "markkarpov.com"
 λ> host
 "markkarpov.com"
-λ> let uri = URI.URI (Just scheme) (Right (URI.Authority Nothing host Nothing)) [] [] Nothing
+λ> let uri = URI.URI (Just scheme) (Right (URI.Authority Nothing host Nothing)) Nothing [] Nothing
 λ> uri
 URI
   { uriScheme = Just "https"
@@ -75,7 +77,7 @@ URI
         { authUserInfo = Nothing
         , authHost = "markkarpov.com"
         , authPort = Nothing })
-  , uriPath = []
+  , uriPath = Nothing
   , uriQuery = []
   , uriFragment = Nothing }
 ```
@@ -101,7 +103,7 @@ URI
         { authUserInfo = Nothing
         , authHost = "markkarpov.com"
         , authPort = Nothing })
-  , uriPath = []
+  , uriPath = Nothing
   , uriQuery = []
   , uriFragment = Nothing }
 ```
@@ -126,7 +128,7 @@ URI
         { authUserInfo = Nothing
         , authHost = "markkarpov.com"
         , authPort = Nothing })
-  , uriPath = []
+  , uriPath = Nothing
   , uriQuery = []
   , uriFragment = Nothing }
 ```
@@ -166,7 +168,8 @@ Just "example.com"
 λ> uri ^. isPathAbsolute
 True
 λ> uri ^. uriPath
-["some","path"]
+Just (False,"some" :| ["path"])  -- The Bool value indicates if the path ends
+                                 -- with a slash. The path is a NonEmpty list.
 λ> k <- URI.mkQueryKey "foo"
 λ> uri ^.. uriQuery . queryParam k
 ["bar","foo"]
@@ -189,10 +192,10 @@ the following options are available:
 * `renderStr` can be used to render to `String`. Sometimes it's handy. The
   render uses difference lists internally so it's not that slow, but in
   general I'd advise avoiding `String`s.
-* `rederStr'` returns `ShowS`, which is just a synonym for `String ->
-  String`—a function that prepends result of rendering to a given `String`.
-  This is useful when the `URI` you want to render is a part of a bigger
-  output, just like with the builders mentioned above.
+* `renderStr'` returns `ShowS`, which is just a synonym for `String ->
+  String`, a function that prepends the result of rendering to a given
+  `String`. This is useful when the `URI` you want to render is a part of a
+  bigger output, just like with the builders mentioned above.
 
 Examples:
 
@@ -216,6 +219,6 @@ Pull requests are also welcome and will be reviewed quickly.
 
 ## License
 
-Copyright © 2017 Mark Karpov
+Copyright © 2017-2018 Mark Karpov
 
 Distributed under BSD 3 clause license.

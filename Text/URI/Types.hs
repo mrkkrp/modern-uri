@@ -24,6 +24,8 @@ module Text.URI.Types
     URI (..)
   , makeAbsolute
   , isPathAbsolute
+  , relativeTo
+  , nonStrictRelativeTo
   , Authority (..)
   , UserInfo (..)
   , QueryParam (..)
@@ -50,8 +52,11 @@ import Control.Monad
 import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.Char
 import Data.Data (Data)
+import Data.Either (isRight)
 import Data.List (intercalate)
-import Data.Maybe (fromMaybe, isJust, fromJust)
+import Data.List.NonEmpty (NonEmpty(..), toList, fromList)
+import Data.Maybe (fromMaybe, isJust, isNothing, fromJust)
+import Data.Semigroup ((<>))
 import Data.Proxy
 import Data.Text (Text)
 import Data.Typeable (Typeable)
@@ -59,7 +64,7 @@ import Data.Void
 import Data.Word (Word8, Word16)
 import GHC.Generics
 import Numeric (showInt, showHex)
-import Test.QuickCheck hiding (label)
+import Test.QuickCheck
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.URI.Parser.Text.Utils (pHost)
@@ -83,8 +88,10 @@ data URI = URI
     --
     -- __Note__: before version /0.1.0.0/ type of 'uriAuthority' was
     -- @'Maybe' 'Authority'@
-  , uriPath :: [RText 'PathPiece]
-    -- ^ Path
+  , uriPath :: Maybe (Bool, NonEmpty (RText 'PathPiece))
+    -- ^ Either 'Nothing' when no path is specified or 'Just' if the URI has a
+    -- 'Path'. The 'Bool' value in the first part of the tuple indicates whether
+    -- the path component has a trailing slash.
   , uriQuery :: [QueryParam]
     -- ^ Query parameters, RFC 3986 does not define the inner organization
     -- of query string, so we deconstruct it following RFC 1866 here
@@ -116,6 +123,70 @@ makeAbsolute scheme URI {..} = URI
 
 isPathAbsolute :: URI -> Bool
 isPathAbsolute = either id (const True) . uriAuthority
+
+-- | 'relativeTo ref base' makes a new 'URI' from 'ref' relative to absolute URI 'base'.
+--
+-- See also: <https://tools.ietf.org/html/rfc3986#section-5.2>
+
+relativeTo :: URI -> URI -> URI
+relativeTo r base
+    | isJust (uriScheme r) =
+        r { uriPath      = removeDotSegments (uriPath r) }
+    | isRight (uriAuthority r) =
+        r { uriScheme    = uriScheme base
+          , uriPath      = removeDotSegments (uriPath r)
+          }
+    | isNothing (uriPath r) =
+        r { uriScheme    = uriScheme base
+          , uriAuthority = uriAuthority base
+          , uriPath      = uriPath base
+          , uriQuery     = if not (null (uriQuery r))
+                             then uriQuery r
+                             else uriQuery base
+          }
+    | isPathAbsolute r =
+        r { uriScheme    = uriScheme base
+          , uriAuthority = uriAuthority base
+          , uriPath      = removeDotSegments (uriPath r)
+          }
+    | otherwise =
+        r { uriScheme    = uriScheme base
+          , uriAuthority = uriAuthority base
+          , uriPath      = removeDotSegments (mergePaths base r)
+          }
+
+mergePaths :: URI -> URI -> Maybe (Bool, NonEmpty (RText 'PathPiece))
+mergePaths base' r'
+  | isRight (uriAuthority base') && isNothing (uriPath base') = uriPath r'
+  | isNothing (uriPath r') = uriPath base'
+  | otherwise =
+      let Just (baseTS, baseP) = uriPath base'
+          Just (refTS,  refP)  = uriPath r'
+          baseP' = toList baseP; refP' = toList refP
+      in  Just (refTS, fromList $
+            (if baseTS then baseP' else init baseP') <> refP')
+
+-- | Non-strict parser version of 'relativeTo' (ignores the scheme component of
+-- reference URI if it's the same as the base URI).
+
+nonStrictRelativeTo :: URI -> URI -> URI
+nonStrictRelativeTo r base
+    | uriScheme r == uriScheme base = relativeTo (r { uriScheme = Nothing }) base
+    | otherwise                     = relativeTo r base
+
+-- | Remove '.' and '..' from a path.
+
+removeDotSegments :: Maybe (Bool, NonEmpty (RText 'PathPiece)) -> Maybe (Bool, NonEmpty (RText 'PathPiece))
+removeDotSegments Nothing = Nothing
+removeDotSegments (Just (trailSlash, path)) = go (toList path) [] trailSlash
+  where
+    go []     []  _  = Nothing
+    go []     out ts = Just (ts, fromList . reverse $ out)
+    go (x:xs) out ts
+      | unRText x == "."  = go xs out (null xs || ts)
+      | unRText x == ".." && (not . null) out = go xs (tail out) (null xs || ts)
+      | unRText x == ".." = go xs out ts
+      | otherwise         = go xs (x : out) ts
 
 -- | Authority component of 'URI'.
 
@@ -328,6 +399,9 @@ instance RLabel 'PathPiece where
 
 instance Arbitrary (RText 'PathPiece) where
   arbitrary = arbText' mkPathPiece
+
+instance Arbitrary (NonEmpty (RText 'PathPiece)) where
+  arbitrary = (:|) <$> arbitrary <*> arbitrary
 
 -- | Lift a 'Text' value into @'RText 'QueryKey'@.
 --
