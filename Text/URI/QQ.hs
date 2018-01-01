@@ -106,5 +106,5 @@ liftToQQ f = QuasiQuoter
 
 -- | Lift strict 'T.Text' to @'Q' 'Exp'@.
 
-liftText :: T.Text -> Q Exp
+liftText :: Text -> Q Exp
 liftText txt = AppE (VarE 'T.pack) <$> lift (T.unpack txt)

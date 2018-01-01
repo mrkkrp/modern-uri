@@ -1,3 +1,7 @@
+## Modern URI 0.1.2.1
+
+* Allow Megaparsec 6.4.0.
+
 ## Modern URI 0.1.2.0
 
 * Fixed handling of `+` in query strings. Now `+` is parsed as space and
