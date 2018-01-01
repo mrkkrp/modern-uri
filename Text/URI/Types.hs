@@ -183,8 +183,7 @@ removeDotSegments (Just (trailSlash, path)) = go (toList path) [] trailSlash
     go []     []  _  = Nothing
     go []     out ts = Just (ts, fromList . reverse $ out)
     go (x:xs) out ts
-      | unRText x == "."  && null xs = go xs out True
-      | unRText x == "."  = go xs out ts
+      | unRText x == "."  = go xs out (null xs || ts)
       | unRText x == ".." && (not . null) out = go xs (tail out) (null xs || ts)
       | unRText x == ".." = go xs out ts
       | otherwise         = go xs (x : out) ts
