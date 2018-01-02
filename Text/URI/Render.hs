@@ -11,6 +11,7 @@
 
 {-# LANGUAGE ConstraintKinds     #-}
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE MultiWayIf          #-}
@@ -34,7 +35,10 @@ import Data.List (intersperse)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Monoid
 import Data.Proxy
+import Data.Reflection
+import Data.Semigroup (Semigroup)
 import Data.String (IsString (..))
+import Data.Tagged
 import Data.Text (Text)
 import Data.Word (Word8)
 import Numeric (showInt)
@@ -61,8 +65,10 @@ render = TL.toStrict . TLB.toLazyText . render'
 -- | Render a given 'URI' value as a 'TLB.Builder'.
 
 render' :: URI -> TLB.Builder
-render' = genericRender TLB.decimal $
-  TLB.fromText . percentEncode
+render' x = equip
+  TLB.decimal
+  (TLB.fromText . percentEncode)
+  (genericRender x)
 
 -- | Render a given 'URI' value as a strict 'ByteString'.
 
@@ -72,8 +78,10 @@ renderBs = BL.toStrict . BLB.toLazyByteString . renderBs'
 -- | Render a given 'URI' value as a 'BLB.Builder'.
 
 renderBs' :: URI -> BLB.Builder
-renderBs' = genericRender BLB.wordDec $
-  BLB.byteString . TE.encodeUtf8 . percentEncode
+renderBs' x = equip
+  BLB.wordDec
+  (BLB.byteString . TE.encodeUtf8 . percentEncode)
+  (genericRender x)
 
 -- | Render a given 'URI' value as a 'String'.
 --
@@ -87,72 +95,102 @@ renderStr = ($ []) . renderStr'
 -- @since 0.0.2.0
 
 renderStr' :: URI -> ShowS
-renderStr' = toShowS . genericRender (DString . showInt)
+renderStr' x = toShowS $ equip
+  (DString . showInt)
   (fromString . T.unpack . percentEncode)
+  (genericRender x)
+
+----------------------------------------------------------------------------
+-- Reflection stuff
+
+data Renders b = Renders
+  { rWord :: Word -> b
+  , rText :: forall l. RLabel l => RText l -> b
+  }
+
+equip
+  :: forall b. (Word -> b)
+  -> (forall l. RLabel l => RText l -> b)
+  -> (forall (s :: *). Reifies s (Renders b) => Tagged s b)
+  -> b
+equip rWord rText f = reify Renders {..} $ \(Proxy :: Proxy s') ->
+  unTagged (f :: Tagged s' b)
+
+renderWord :: forall s b. Reifies s (Renders b)
+  => Word
+  -> Tagged s b
+renderWord = Tagged . rWord (reflect (Proxy :: Proxy s))
+
+renderText :: forall s b l. (Reifies s (Renders b), RLabel l)
+  => RText l
+  -> Tagged s b
+renderText = Tagged . rText (reflect (Proxy :: Proxy s))
 
 ----------------------------------------------------------------------------
 -- Generic render
 
-type Render a b = (forall l. RLabel l => RText l -> b) -> a -> b
-type R        b = (Monoid b, IsString b)
+type Render a b = forall (s :: *).
+  (Semigroup b, Monoid b, IsString b, Reifies s (Renders b))
+  => a
+  -> Tagged s b
 
-genericRender :: R b => (Word -> b) -> Render URI b
-genericRender d r uri@URI {..} = mconcat
-  [ rJust (rScheme r) uriScheme
-  , rJust (rAuthority d r) (either (const Nothing) Just uriAuthority)
-  , rPath (isPathAbsolute uri) r uriPath
-  , rQuery r uriQuery
-  , rJust (rFragment r) uriFragment ]
+genericRender :: Render URI b
+genericRender uri@URI {..} = mconcat
+  [ rJust rScheme uriScheme
+  , rJust rAuthority (either (const Nothing) Just uriAuthority)
+  , rPath (isPathAbsolute uri) uriPath
+  , rQuery uriQuery
+  , rJust rFragment uriFragment ]
 {-# INLINE genericRender #-}
 
 rJust :: Monoid m => (a -> m) -> Maybe a -> m
 rJust = maybe mempty
 
-rScheme :: R b => Render (RText 'Scheme) b
-rScheme r = (<> ":") . r
+rScheme :: Render (RText 'Scheme) b
+rScheme = (<> ":") . renderText
 {-# INLINE rScheme #-}
 
-rAuthority :: R b => (Word -> b) -> Render Authority b
-rAuthority d r Authority {..} = mconcat
+rAuthority :: Render Authority b
+rAuthority Authority {..} = mconcat
   [ "//"
-  , rJust (rUserInfo r) authUserInfo
-  , r authHost
-  , rJust ((":" <>) . d) authPort ]
+  , rJust rUserInfo authUserInfo
+  , renderText authHost
+  , rJust ((":" <>) . renderWord) authPort ]
 {-# INLINE rAuthority #-}
 
-rUserInfo :: R b => Render UserInfo b
-rUserInfo r UserInfo {..} = mconcat
-  [ r uiUsername
-  , rJust ((":" <>) . r) uiPassword
+rUserInfo :: Render UserInfo b
+rUserInfo UserInfo {..} = mconcat
+  [ renderText uiUsername
+  , rJust ((":" <>) . renderText) uiPassword
   , "@" ]
 {-# INLINE rUserInfo #-}
 
-rPath :: R b => Bool -> Render (Maybe (Bool, NonEmpty (RText 'PathPiece))) b
-rPath isAbsolute r path = leading <> other
+rPath :: Bool -> Render (Maybe (Bool, NonEmpty (RText 'PathPiece))) b
+rPath isAbsolute path = leading <> other
   where
     leading = if isAbsolute then "/" else mempty
     other =
       case path of
         Nothing -> mempty
         Just (trailingSlash, ps) ->
-          (mconcat . intersperse "/" . fmap r . NE.toList) ps
+          (mconcat . intersperse "/" . fmap renderText . NE.toList) ps
           <> if trailingSlash then "/" else mempty
 {-# INLINE rPath #-}
 
-rQuery :: R b => Render [QueryParam] b
-rQuery r = \case
+rQuery :: Render [QueryParam] b
+rQuery = \case
   [] -> mempty
-  qs -> "?" <> mconcat (intersperse "&" (rQueryParam r <$> qs))
+  qs -> "?" <> mconcat (intersperse "&" (rQueryParam <$> qs))
 {-# INLINE rQuery #-}
 
-rQueryParam :: R b => Render QueryParam b
-rQueryParam r = \case
-  QueryFlag flag -> r flag
-  QueryParam k v -> r k <> "=" <> r v
+rQueryParam :: Render QueryParam b
+rQueryParam = \case
+  QueryFlag flag -> renderText flag
+  QueryParam k v -> renderText k <> "=" <> renderText v
 {-# INLINE rQueryParam #-}
 
-rFragment :: R b => Render (RText 'Fragment) b
-rFragment r = ("#" <>) . r
+rFragment :: Render (RText 'Fragment) b
+rFragment = ("#" <>) . renderText
 {-# INLINE rFragment #-}
 
 ----------------------------------------------------------------------------
