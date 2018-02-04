@@ -39,6 +39,16 @@ spec = do
             , elabel "path piece"
             , eeof ]
       URI.mkURI "что-то" `shouldThrow` (== URI.ParseException "что-то" e)
+  describe "emptyURI" $ do
+    it "parsing of empty input produces emptyURI" $
+      URI.mkURI "" `shouldReturn` URI.emptyURI
+    context "rendering of emptyURI produces empty output" $ do
+      it "with render" $
+        URI.render URI.emptyURI `shouldBe` ""
+      it "with renderBs" $
+        URI.renderBs URI.emptyURI `shouldBe` ""
+      it "with renderStr" $
+        URI.renderStr URI.emptyURI `shouldBe` ""
   describe "makeAbsolute" $ do
     context "when given URI already has scheme" $
       it "returns that URI unchanged" $

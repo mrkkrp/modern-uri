@@ -1,3 +1,7 @@
+## Modern URI 0.2.1.0
+
+* Added `emptyURI`—`URI` value representing the empty URI.
+
 ## Modern URI 0.2.0.0
 
 * Changed the type of `uriPath` field of the `URI` record from `[RText

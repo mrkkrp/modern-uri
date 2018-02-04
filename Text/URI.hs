@@ -28,6 +28,7 @@ module Text.URI
   ( -- * Data types
     URI (..)
   , mkURI
+  , emptyURI
   , makeAbsolute
   , isPathAbsolute
   , relativeTo
@@ -72,6 +73,19 @@ import Text.URI.Parser.Text
 import Text.URI.Render
 import Text.URI.Types
 import qualified Data.List.NonEmpty as NE
+
+-- | The empty 'URI'.
+--
+-- @since 0.2.1.0
+
+emptyURI :: URI
+emptyURI = URI
+  { uriScheme    = Nothing
+  , uriAuthority = Left False
+  , uriPath      = Nothing
+  , uriQuery     = []
+  , uriFragment  = Nothing
+  }
 
 -- $rtext
 --
