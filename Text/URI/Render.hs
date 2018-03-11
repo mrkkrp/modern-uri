@@ -9,6 +9,7 @@
 --
 -- URI renders, an internal module.
 
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE ConstraintKinds     #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleContexts    #-}
@@ -33,7 +34,6 @@ import Data.ByteString (ByteString)
 import Data.Char (chr, intToDigit)
 import Data.List (intersperse)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Monoid
 import Data.Proxy
 import Data.Reflection
 import Data.Semigroup (Semigroup)
@@ -53,6 +53,10 @@ import qualified Data.Text.Encoding           as TE
 import qualified Data.Text.Lazy               as TL
 import qualified Data.Text.Lazy.Builder       as TLB
 import qualified Data.Text.Lazy.Builder.Int   as TLB
+
+#if !MIN_VERSION_base(4,11,0)
+import Data.Monoid
+#endif
 
 ----------------------------------------------------------------------------
 -- High-level wrappers
