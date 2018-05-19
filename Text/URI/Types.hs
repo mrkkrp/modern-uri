@@ -339,9 +339,6 @@ instance RLabel 'PathPiece where
 instance Arbitrary (RText 'PathPiece) where
   arbitrary = arbText' mkPathPiece
 
-instance Arbitrary (NonEmpty (RText 'PathPiece)) where
-  arbitrary = (:|) <$> arbitrary <*> arbitrary
-
 -- | Lift a 'Text' value into @'RText 'QueryKey'@.
 --
 -- This smart constructor does not perform any sort of normalization.
