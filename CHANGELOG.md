@@ -1,3 +1,8 @@
+## Modern URI 0.2.2.0
+
+* Removed a potentially overlapping instance `Arbitrary (NonEmpty (RText
+  'PathPiece))`.
+
 ## Modern URI 0.2.1.0
 
 * Added `emptyURI`—`URI` value representing the empty URI.
