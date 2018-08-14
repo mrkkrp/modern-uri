@@ -434,7 +434,9 @@ arbHost :: Gen (RText 'Host)
 arbHost = fromJust . mkHost . T.pack <$> frequency
   [ (1, ipLiteral)
   , (2, ipv4Address)
-  , (4, regName) ]
+  , (4, regName)
+  , (1, return "")
+  ]
   where
     ipLiteral = do
       xs <- oneof [ipv6Address, ipvFuture]

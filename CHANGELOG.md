@@ -1,3 +1,8 @@
+## Modern URI 0.2.3.0
+
+* Fixed a bug that made it impossible to have empty host names. This allows
+  us to parse URIs like `file:///etc/hosts`.
+
 ## Modern URI 0.2.2.0
 
 * Removed a potentially overlapping instance `Arbitrary (NonEmpty (RText

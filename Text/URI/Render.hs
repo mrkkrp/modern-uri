@@ -268,7 +268,7 @@ instance RLabel 'Scheme where
 
 instance RLabel 'Host where
   needsNoEscaping Proxy x = isUnreserved x || isDelim x
-  skipEscaping Proxy x = T.head x == '['
+  skipEscaping Proxy x = T.take 1 x == "["
 
 instance RLabel 'Username where
   needsNoEscaping Proxy x = isUnreserved x || isDelim x
