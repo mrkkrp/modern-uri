@@ -128,11 +128,14 @@ pHost = choice
       skipSome (unreservedChar <|> subDelimChar <|> char 58)
     regName = fmap (intercalate [46]) . flip sepBy1 (char 46) $ do
       let ch = percentEncChar <|> asciiAlphaNumChar
-      x <- ch
-      let r = ch <|> try
-            (char 45 <* (lookAhead . try) (ch <|> char 45))
-      xs <- many r
-      return (x:xs)
+      mx <- optional ch
+      case mx of
+        Nothing -> return []
+        Just x -> do
+          let r = ch <|> try
+                (char 45 <* (lookAhead . try) (ch <|> char 45))
+          xs <- many r
+          return (x:xs)
 
 pUserInfo :: MonadParsec e ByteString m => m UserInfo
 pUserInfo = try $ do

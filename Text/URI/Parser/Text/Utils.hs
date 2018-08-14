@@ -90,11 +90,14 @@ pHost pe = choice
             if pe
               then percentEncChar <|> asciiAlphaNumChar
               else alphaNumChar
-      x <- ch
-      let r = ch <|> try
-            (char '-' <* (lookAhead . try) (ch <|> char '-'))
-      xs <- many r
-      return (x:xs)
+      mx <- optional ch
+      case mx of
+        Nothing -> return ""
+        Just x -> do
+          let r = ch <|> try
+                (char '-' <* (lookAhead . try) (ch <|> char '-'))
+          xs <- many r
+          return (x:xs)
 {-# INLINEABLE pHost #-}
 
 -- | Parse an ASCII alpha character.
