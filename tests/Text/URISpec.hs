@@ -30,7 +30,7 @@ spec = do
       uri <- mkTestURI
       URI.mkURI testURI `shouldReturn` uri
     it "rejects invalid URIs" $ do
-      let e = err posI . mconcat $
+      let e = err 0 . mconcat $
             [ utok 'ч'
             , etok '#'
             , etok '/'
@@ -39,7 +39,12 @@ spec = do
             , elabel "ASCII alpha character"
             , elabel "path piece"
             , eeof ]
-      URI.mkURI "что-то" `shouldThrow` (== URI.ParseException "что-то" e)
+          b = ParseErrorBundle
+            { bundleErrors = e :| []
+            , bundlePosState = initialPosState s
+            }
+          s = "что-то"
+      URI.mkURI s `shouldThrow` (== URI.ParseException b)
   describe "emptyURI" $ do
     it "parsing of empty input produces emptyURI" $
       URI.mkURI "" `shouldReturn` URI.emptyURI
@@ -159,7 +164,7 @@ spec = do
         shouldParseBs (URI.renderBs uri) uri
   describe "parse" $ do
     it "rejects Unicode in scheme" $
-      parse urip "" "что:something" `shouldFailWith` err posI (mconcat
+      parse urip "" "что:something" `shouldFailWith` err 0 (mconcat
         [ utok 'ч'
         , etok '#'
         , etok '/'
@@ -170,7 +175,7 @@ spec = do
         , eeof ] )
     it "rejects Unicode in host" $ do
       let s = "https://юникод.рф"
-      parse urip "" s `shouldFailWith` err (posN 8 s) (mconcat
+      parse urip "" s `shouldFailWith` err 8 (mconcat
         [ utok 'ю'
         , etok '#'
         , etok '%'
@@ -187,7 +192,7 @@ spec = do
         ] )
     it "rejects Unicode in path" $ do
       let s = "https://github.com/марк"
-      parse urip "" s `shouldFailWith` err (posN 19 s) (mconcat
+      parse urip "" s `shouldFailWith` err 19 (mconcat
         [ utok 'м'
         , etok '#'
         , etok '/'
@@ -316,7 +321,7 @@ shouldParse' s a =
   case runParser urip "" s of
     Left e -> expectationFailure $
       "the parser is expected to succeed, but it failed with:\n" ++
-      parseErrorPretty' s e
+      errorBundlePretty e
     Right a' -> a' `shouldBe` a
 
 -- | Similar to 'shouldParse'' but uses 'URI.parserBs' under the hood.
@@ -329,7 +334,7 @@ shouldParseBs s a =
   case runParser (URI.parserBs <* eof :: Parsec Void ByteString URI) "" s of
     Left e -> expectationFailure $
       "the parser is expected to succeed, but it failed with:\n" ++
-      parseErrorPretty' s e
+      errorBundlePretty e
     Right a' -> a' `shouldBe` a
 
 -- | Test cases from section 5.4.1 from RFC 3986.
