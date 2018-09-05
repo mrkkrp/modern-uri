@@ -52,8 +52,8 @@ import Control.Applicative (empty)
 mkURI :: MonadThrow m => Text -> m URI
 mkURI input =
   case runParser (parser <* eof :: Parsec Void Text URI) "" input of
-    Left err -> throwM (ParseException input err)
-    Right x  -> return x
+    Left  b -> throwM (ParseException b)
+    Right x -> return x
 
 -- | This parser can be used to parse 'URI' from strict 'Text'. Remember to
 -- use a concrete non-polymorphic parser type for efficiency.

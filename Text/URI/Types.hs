@@ -63,7 +63,6 @@ import GHC.Generics
 import Numeric (showInt, showHex)
 import Test.QuickCheck
 import Text.Megaparsec
-import Text.Megaparsec.Char
 import Text.URI.Parser.Text.Utils (pHost)
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text          as T
@@ -183,12 +182,12 @@ instance NFData QueryParam
 -- | Parse exception thrown by 'mkURI' when a given 'Text' value cannot be
 -- parsed as a 'URI'.
 
-data ParseException = ParseException Text (ParseError Char Void)
+newtype ParseException = ParseException (ParseErrorBundle Text Void)
   -- ^ Arguments are: original input and parse error
   deriving (Show, Eq, Data, Typeable, Generic)
 
 instance Exception ParseException where
-  displayException (ParseException s e) = parseErrorPretty' s e
+  displayException (ParseException b) = errorBundlePretty b
 
 instance NFData ParseException
 

@@ -91,17 +91,17 @@ pHost = choice
     ipLiteral = between (char 91) (char 93) $
       try ipv6Address <|> ipvFuture
     octet = do
-      pos       <- getNextTokenPosition
+      o <- getOffset
       (toks, x) <- match L.decimal
       when (x >= (256 :: Integer)) $ do
-        mapM_ setPosition pos
+        setOffset o
         failure
           (fmap Tokens . NE.nonEmpty . B.unpack $ toks)
           (E.singleton . Label . NE.fromList $ "decimal number from 0 to 255")
     ipv4Address =
       count 3 (octet <* char 46) *> octet
     ipv6Address = do
-      pos        <- getNextTokenPosition
+      o <- getOffset
       (toks, xs) <- match $ do
         xs' <- maybeToList <$> optional ([] <$ string "::")
         xs  <- flip sepBy1 (char 58) $ do
@@ -117,7 +117,7 @@ pHost = choice
       let nskips  = length (filter null xs)
           npieces = length xs
       unless (nskips < 2 && (npieces == 8 || (nskips == 1 && npieces < 8))) $ do
-        mapM_ setPosition pos
+        setOffset o
         failure
           (fmap Tokens . NE.nonEmpty . B.unpack $ toks)
           (E.singleton . Label . NE.fromList $ "valid IPv6 address")

@@ -1,3 +1,8 @@
+## Modern URI 0.3.0.0
+
+* Uses Megaparsec 7. Visible API changes amount to an adjustment in
+  definition of the `ParseException` type.
+
 ## Modern URI 0.2.2.0
 
 * Removed a potentially overlapping instance `Arbitrary (NonEmpty (RText
