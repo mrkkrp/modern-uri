@@ -216,6 +216,11 @@ spec = do
         , uriQuery = []
         , uriFragment = Nothing
         }
+    it "parses URIs with superfluous '&' before query parameters" $ do
+      uri <- mkTestURI
+      let s = "https://mark%3a%40:secret:%40@github.com:443/mrkkrp/modern-uri+%3a@?&foo:@=bar+:@#fragment:@"
+      parse urip "" s `shouldParse` uri
+
   describe "render" $ do
     it "sort of works" $
       fmap URI.render mkTestURI `shouldReturn` testURI

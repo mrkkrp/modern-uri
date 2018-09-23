@@ -175,6 +175,7 @@ pPath hasAuth = do
 pQuery :: MonadParsec e ByteString m => m [QueryParam]
 pQuery = do
   void (char 63)
+  void (optional (char 38))
   fmap catMaybes . flip sepBy (char 38) . label "query parameter" $ do
     let p = many (pchar' <|> char 47 <|> char 63)
     k' <- p
