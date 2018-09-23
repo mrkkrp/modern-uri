@@ -1,3 +1,7 @@
+## Modern URI 0.3.0.1
+
+* Allow superfluous `&` right after question sign in query parameters.
+
 ## Modern URI 0.3.0.0
 
 * Uses Megaparsec 7. Visible API changes amount to an adjustment in
