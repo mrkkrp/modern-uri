@@ -32,8 +32,10 @@ where
 
 import Data.ByteString (ByteString)
 import Data.Char (chr, intToDigit)
+import Data.Either (isRight)
 import Data.List (intersperse)
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (isJust)
 import Data.Proxy
 import Data.Reflection
 import Data.Semigroup (Semigroup)
@@ -71,7 +73,7 @@ render = TL.toStrict . TLB.toLazyText . render'
 render' :: URI -> TLB.Builder
 render' x = equip
   TLB.decimal
-  (TLB.fromText . percentEncode)
+  (\c t -> TLB.fromText (percentEncode c t))
   (genericRender x)
 
 -- | Render a given 'URI' value as a strict 'ByteString'.
@@ -84,7 +86,7 @@ renderBs = BL.toStrict . BLB.toLazyByteString . renderBs'
 renderBs' :: URI -> BLB.Builder
 renderBs' x = equip
   BLB.wordDec
-  (BLB.byteString . TE.encodeUtf8 . percentEncode)
+  (\c t -> BLB.byteString (TE.encodeUtf8 (percentEncode c t)))
   (genericRender x)
 
 -- | Render a given 'URI' value as a 'String'.
@@ -101,7 +103,7 @@ renderStr = ($ []) . renderStr'
 renderStr' :: URI -> ShowS
 renderStr' x = toShowS $ equip
   (DString . showInt)
-  (fromString . T.unpack . percentEncode)
+  (\c t -> fromString (T.unpack (percentEncode c t)))
   (genericRender x)
 
 ----------------------------------------------------------------------------
@@ -109,12 +111,12 @@ renderStr' x = toShowS $ equip
 
 data Renders b = Renders
   { rWord :: Word -> b
-  , rText :: forall l. RLabel l => RText l -> b
+  , rText :: forall l. RLabel l => Bool -> RText l -> b
   }
 
 equip
   :: forall b. (Word -> b)
-  -> (forall l. RLabel l => RText l -> b)
+  -> (forall l. RLabel l => Bool -> RText l -> b)
   -> (forall (s :: *). Reifies s (Renders b) => Tagged s b)
   -> b
 equip rWord rText f = reify Renders {..} $ \(Proxy :: Proxy s') ->
@@ -126,9 +128,10 @@ renderWord :: forall s b. Reifies s (Renders b)
 renderWord = Tagged . rWord (reflect (Proxy :: Proxy s))
 
 renderText :: forall s b l. (Reifies s (Renders b), RLabel l)
-  => RText l
+  => Bool
+  -> RText l
   -> Tagged s b
-renderText = Tagged . rText (reflect (Proxy :: Proxy s))
+renderText c t = Tagged $ rText (reflect (Proxy :: Proxy s)) c t
 
 ----------------------------------------------------------------------------
 -- Generic render
@@ -142,7 +145,7 @@ genericRender :: Render URI b
 genericRender uri@URI {..} = mconcat
   [ rJust rScheme uriScheme
   , rJust rAuthority (either (const Nothing) Just uriAuthority)
-  , rPath (isPathAbsolute uri) uriPath
+  , rPath (isJust uriScheme) (isRight uriAuthority) (isPathAbsolute uri) uriPath
   , rQuery uriQuery
   , rJust rFragment uriFragment ]
 {-# INLINE genericRender #-}
@@ -151,34 +154,43 @@ rJust :: Monoid m => (a -> m) -> Maybe a -> m
 rJust = maybe mempty
 
 rScheme :: Render (RText 'Scheme) b
-rScheme = (<> ":") . renderText
+rScheme = (<> ":") . renderText False
 {-# INLINE rScheme #-}
 
 rAuthority :: Render Authority b
 rAuthority Authority {..} = mconcat
   [ "//"
   , rJust rUserInfo authUserInfo
-  , renderText authHost
+  , renderText False authHost
   , rJust ((":" <>) . renderWord) authPort ]
 {-# INLINE rAuthority #-}
 
 rUserInfo :: Render UserInfo b
 rUserInfo UserInfo {..} = mconcat
-  [ renderText uiUsername
-  , rJust ((":" <>) . renderText) uiPassword
+  [ renderText False uiUsername
+  , rJust ((":" <>) . renderText False) uiPassword
   , "@" ]
 {-# INLINE rUserInfo #-}
 
-rPath :: Bool -> Render (Maybe (Bool, NonEmpty (RText 'PathPiece))) b
-rPath isAbsolute path = leading <> other
+rPath
+  :: Bool                       -- ^ Has scheme
+  -> Bool                       -- ^ Has authority
+  -> Bool                       -- ^ Is absolute
+  -> Render (Maybe (Bool, NonEmpty (RText 'PathPiece))) b
+rPath hasScheme hasAuthority isAbsolute path = leading <> other
   where
     leading = if isAbsolute then "/" else mempty
     other =
       case path of
         Nothing -> mempty
         Just (trailingSlash, ps) ->
-          (mconcat . intersperse "/" . fmap renderText . NE.toList) ps
+          (mconcat . intersperse "/" . fmap f . zip [0..] . NE.toList) ps
           <> if trailingSlash then "/" else mempty
+    f (i :: Int,x) = renderText
+      (not hasScheme    &&
+       not hasAuthority &&
+       not isAbsolute   &&
+       i == (0 :: Int)) x
 {-# INLINE rPath #-}
 
 rQuery :: Render [QueryParam] b
@@ -189,12 +201,12 @@ rQuery = \case
 
 rQueryParam :: Render QueryParam b
 rQueryParam = \case
-  QueryFlag flag -> renderText flag
-  QueryParam k v -> renderText k <> "=" <> renderText v
+  QueryFlag flag -> renderText False flag
+  QueryParam k v -> renderText False k <> "=" <> renderText False v
 {-# INLINE rQueryParam #-}
 
 rFragment :: Render (RText 'Fragment) b
-rFragment = ("#" <>) . renderText
+rFragment = ("#" <>) . renderText False
 {-# INLINE rFragment #-}
 
 ----------------------------------------------------------------------------
@@ -218,9 +230,10 @@ instance IsString DString where
 -- | Percent-encode a 'Text' value.
 
 percentEncode :: forall l. RLabel l
-  => RText l           -- ^ Input text to encode
+  => Bool              -- ^ Unconditionally escape colon
+  -> RText l           -- ^ Input text to encode
   -> Text              -- ^ Percent-encoded text
-percentEncode rtxt =
+percentEncode escapeColon rtxt =
   if skipEscaping (Proxy :: Proxy l) txt
     then txt
     else T.unfoldr f (TE.encodeUtf8 txt, [])
@@ -229,8 +242,10 @@ percentEncode rtxt =
       case B.uncons bs' of
         Nothing -> Nothing
         Just (w, bs'') -> Just $
-          if | sap && w == 32 -> ('+', (bs'', []))
-             | nne w          -> (chr (fromIntegral w), (bs'', []))
+          if | sap && w == 32 ->
+               ('+', (bs'', []))
+             | nne w && not (w == 58 && escapeColon) ->
+               (chr (fromIntegral w), (bs'', []))
              | otherwise      ->
                let c:|cs = encodeByte w
                in (c, (bs'', cs))
@@ -278,7 +293,7 @@ instance RLabel 'Password where
 
 instance RLabel 'PathPiece where
   needsNoEscaping Proxy x =
-    isUnreserved x || isDelim x || x == 64
+    isUnreserved x || isDelim x || x == 58 || x == 64
 
 instance RLabel 'QueryKey where
   needsNoEscaping Proxy x =

@@ -1,3 +1,12 @@
+## Modern URI 0.3.1.0
+
+* Now the library escapes colon only in first segment of relative-path
+  references, as it should. See sections “3.3 Path” and “4.2 Relative
+  Reference” of RFC 3986. We still parse colon in first segment of
+  relative-path references when it cannot be mistaken for the colon that
+  ends scheme (otherwise the part that looks like scheme will be parse as
+  one). If you think this is too lax, open an issue though.
+
 ## Modern URI 0.3.0.1
 
 * Allow superfluous `&` right after question sign in query parameters.
