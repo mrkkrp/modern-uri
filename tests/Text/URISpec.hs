@@ -220,18 +220,25 @@ spec = do
       uri <- mkTestURI
       let s = "https://mark%3a%40:secret:%40@github.com:443/mrkkrp/modern-uri+%3a@?&foo:@=bar+:@#fragment:@"
       parse urip "" s `shouldParse` uri
-
   describe "render" $ do
     it "sort of works" $
       fmap URI.render mkTestURI `shouldReturn` testURI
-    context "when URI has absolute path" $
-      it "escapes colon properly in first path piece" $
-        (URI.render <$> URI.mkURI "/docu:ment.html")
-          `shouldReturn` "/docu%3ament.html"
-    context "when URI has relative path" $
-      it "escapes colon properly in first path piece" $
-        (URI.render <$> URI.mkURI "docu%3ament.html")
-          `shouldReturn` "docu%3ament.html"
+    context "when URI has scheme" $
+      it "escapes colon in path components" $
+        (URI.render <$> URI.mkURI "https:/fir:st/se:cond")
+          `shouldReturn` "https:/fir%3ast/se%3acond"
+    context "when URI is a network-path reference" $
+      it "does not escape colon in path components" $
+        (URI.render <$> URI.mkURI "//host/fir:st/se:cond")
+          `shouldReturn` "//host/fir%3ast/se%3acond"
+    context "when URI is a relative-path reference" $
+      it "escapes colon but only in the first path segment" $ do
+        firstSeg  <- URI.mkPathPiece "fir:st"
+        secondSeg <- URI.mkPathPiece "se:cond"
+        let uri = URI.emptyURI
+              { uriPath = Just (False, firstSeg :| [secondSeg])
+              }
+        URI.render uri `shouldBe` "fir%3ast/se%3acond"
   describe "renderBs" $
     it "sort of works" $
       fmap URI.renderBs mkTestURI `shouldReturn` testURI
