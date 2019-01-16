@@ -133,7 +133,7 @@ data Authority = Authority
     -- ^ User information
   , authHost :: RText 'Host
     -- ^ Host
-  , authPort :: Maybe Word
+  , authPort :: Maybe Word16
     -- ^ Port number
   } deriving (Show, Eq, Ord, Data, Typeable, Generic)
 

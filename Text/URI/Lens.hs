@@ -40,6 +40,7 @@ import Data.Functor.Contravariant
 import Data.Maybe (isJust)
 import Data.Profunctor
 import Data.Text (Text)
+import Data.Word (Word16)
 import Text.URI.Types (URI, Authority, UserInfo, QueryParam (..), RText, RTextLabel (..))
 import qualified Data.List.NonEmpty as NE
 import qualified Text.URI.Types     as URI
@@ -107,7 +108,7 @@ authHost f s = (\x -> s { URI.authHost = x }) <$> f (URI.authHost s)
 
 -- | 'Authority' port lens.
 
-authPort :: Lens' Authority (Maybe Word)
+authPort :: Lens' Authority (Maybe Word16)
 authPort f s = (\x -> s { URI.authPort = x }) <$> f (URI.authPort s)
 
 -- | 'UserInfo' username lens.

@@ -40,7 +40,7 @@ import Data.Semigroup (Semigroup)
 import Data.String (IsString (..))
 import Data.Tagged
 import Data.Text (Text)
-import Data.Word (Word8)
+import Data.Word (Word8,Word16)
 import Numeric (showInt)
 import Text.URI.Types
 import qualified Data.ByteString              as B
@@ -83,7 +83,7 @@ renderBs = BL.toStrict . BLB.toLazyByteString . renderBs'
 
 renderBs' :: URI -> BLB.Builder
 renderBs' x = equip
-  BLB.wordDec
+  BLB.word16Dec
   (BLB.byteString . TE.encodeUtf8 . percentEncode)
   (genericRender x)
 
@@ -108,12 +108,12 @@ renderStr' x = toShowS $ equip
 -- Reflection stuff
 
 data Renders b = Renders
-  { rWord :: Word -> b
+  { rWord :: Word16 -> b
   , rText :: forall l. RLabel l => RText l -> b
   }
 
 equip
-  :: forall b. (Word -> b)
+  :: forall b. (Word16 -> b)
   -> (forall l. RLabel l => RText l -> b)
   -> (forall (s :: *). Reifies s (Renders b) => Tagged s b)
   -> b
@@ -121,7 +121,7 @@ equip rWord rText f = reify Renders {..} $ \(Proxy :: Proxy s') ->
   unTagged (f :: Tagged s' b)
 
 renderWord :: forall s b. Reifies s (Renders b)
-  => Word
+  => Word16
   -> Tagged s b
 renderWord = Tagged . rWord (reflect (Proxy :: Proxy s))
 
