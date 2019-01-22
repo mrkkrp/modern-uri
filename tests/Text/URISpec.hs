@@ -45,6 +45,15 @@ spec = do
             }
           s = "что-то"
       URI.mkURI s `shouldThrow` (== URI.ParseException b)
+    it "overflows port value when parsing" $ do
+      uri <- URI.mkURI "http://github.com:123456789/"
+      host <- URI.mkHost "github.com"
+      let auth = Right $ URI.Authority
+                  { URI.authUserInfo = Nothing
+                  , URI.authHost = host
+                  , URI.authPort = Just 52501
+                  }
+      uriAuthority uri `shouldBe` auth
   describe "emptyURI" $ do
     it "parsing of empty input produces emptyURI" $
       URI.mkURI "" `shouldReturn` URI.emptyURI
