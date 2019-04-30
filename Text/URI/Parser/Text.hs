@@ -9,7 +9,6 @@
 --
 -- URI parser for strict 'Text', an internal module.
 
-{-# LANGUAGE CPP               #-}
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -36,10 +35,6 @@ import qualified Data.ByteString.Char8      as B8
 import qualified Data.List.NonEmpty         as NE
 import qualified Data.Text.Encoding         as TE
 import qualified Text.Megaparsec.Char.Lexer as L
-
-#if !MIN_VERSION_megaparsec(6,4,0)
-import Control.Applicative (empty)
-#endif
 
 -- | Construct a 'URI' from 'Text'. The input you pass to 'mkURI' must be a
 -- valid URI as per RFC 3986, that is, its components should be

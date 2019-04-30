@@ -9,7 +9,6 @@
 --
 -- URI parser for string 'ByteString', an internal module.
 
-{-# LANGUAGE CPP               #-}
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -39,10 +38,6 @@ import qualified Data.List.NonEmpty         as NE
 import qualified Data.Set                   as E
 import qualified Data.Text.Encoding         as TE
 import qualified Text.Megaparsec.Byte.Lexer as L
-
-#if !MIN_VERSION_megaparsec(6,4,0)
-import Control.Applicative (empty)
-#endif
 
 -- | This parser can be used to parse 'URI' from strict 'ByteString'.
 -- Remember to use a concrete non-polymorphic parser type for efficiency.

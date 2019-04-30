@@ -1,3 +1,7 @@
+## Unreleased
+
+* Dropped support for GHC 7.10.
+
 ## Modern URI 0.3.0.1
 
 * Allow superfluous `&` right after question sign in query parameters.
