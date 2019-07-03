@@ -1,6 +1,6 @@
 ## Unreleased
 
-* Dropped support for GHC 7.10.
+* Dropped support for GHC 8.0 and 7.10.
 
 ## Modern URI 0.3.0.1
 
