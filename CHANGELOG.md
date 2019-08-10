@@ -1,6 +1,9 @@
-## Unreleased
+## Modern URI 0.3.1.0
 
 * Dropped support for GHC 8.0 and 7.10.
+
+* Added Template Haskell `Lift` instance for the `URI` type and its
+  sub-components.
 
 ## Modern URI 0.3.0.1
 
