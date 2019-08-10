@@ -18,6 +18,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TupleSections       #-}
 
 module Text.URI.Types
@@ -56,7 +57,7 @@ import Data.List.NonEmpty (NonEmpty(..))
 import Data.Maybe (fromMaybe, isJust, fromJust)
 import Data.Proxy
 import Data.Text (Text)
-import Data.Typeable (Typeable)
+import Data.Typeable (Typeable, cast)
 import Data.Void
 import Data.Word (Word8, Word16)
 import GHC.Generics
@@ -66,6 +67,7 @@ import Text.Megaparsec
 import Text.URI.Parser.Text.Utils (pHost)
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text          as T
+import qualified Language.Haskell.TH.Syntax as TH
 
 ----------------------------------------------------------------------------
 -- Data types
@@ -111,6 +113,11 @@ instance Arbitrary URI where
 
 instance NFData URI
 
+-- | @since 0.3.1.0
+
+instance TH.Lift URI where
+  lift = liftData
+
 -- | Make a given 'URI' reference absolute using the supplied @'RText'
 -- 'Scheme'@ if necessary.
 
@@ -145,6 +152,11 @@ instance Arbitrary Authority where
 
 instance NFData Authority
 
+-- | @since 0.3.1.0
+
+instance TH.Lift Authority where
+  lift = liftData
+
 -- | User info as a combination of username and password.
 
 data UserInfo = UserInfo
@@ -162,6 +174,11 @@ instance Arbitrary UserInfo where
 
 instance NFData UserInfo
 
+-- | @since 0.3.1.0
+
+instance TH.Lift UserInfo where
+  lift = liftData
+
 -- | Query parameter either in the form of flag or as a pair of key and
 -- value. A key cannot be empty, while a value can.
 
@@ -178,6 +195,11 @@ instance Arbitrary QueryParam where
     , QueryParam <$> arbitrary <*> arbitrary ]
 
 instance NFData QueryParam
+
+-- | @since 0.3.1.0
+
+instance TH.Lift QueryParam where
+  lift = liftData
 
 -- | Parse exception thrown by 'mkURI' when a given 'Text' value cannot be
 -- parsed as a 'URI'.
@@ -203,6 +225,11 @@ instance Show (RText l) where
   show (RText txt) = show txt
 
 instance NFData (RText l) where
+
+-- | @since 0.3.1.0
+
+instance Typeable l => TH.Lift (RText l) where
+  lift = liftData
 
 -- | Refined text labels.
 
@@ -476,3 +503,12 @@ arbText f = fromJust . f . T.pack <$> listOf arbitrary
 
 arbText' :: (Text -> Maybe (RText l)) -> Gen (RText l)
 arbText' f = fromJust . f . T.pack <$> listOf1 arbitrary
+
+----------------------------------------------------------------------------
+-- TH lifting helpers
+
+liftData :: Data a => a -> TH.Q TH.Exp
+liftData = TH.dataToExpQ (fmap liftText . cast)
+
+liftText :: Text -> TH.Q TH.Exp
+liftText t = TH.AppE (TH.VarE 'T.pack) <$> TH.lift (T.unpack t)
