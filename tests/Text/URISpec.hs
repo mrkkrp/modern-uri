@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                  #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -7,7 +8,6 @@ import Control.Monad
 import Data.ByteString (ByteString)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (isNothing, isJust)
-import Data.Monoid ((<>))
 import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Void
@@ -19,6 +19,10 @@ import Text.URI (URI (..), RTextException (..), RTextLabel (..))
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import qualified Text.URI  as URI
+
+#if !MIN_VERSION_base(4,13,0)
+import Data.Semigroup ((<>))
+#endif
 
 instance Arbitrary Text where
   arbitrary = T.pack <$> arbitrary
