@@ -20,6 +20,7 @@
 -- "Text.URI.QQ" for quasi-quoters for compile-time validation of URIs and
 -- refined text components.
 
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
@@ -67,12 +68,15 @@ where
 import Data.Either (isLeft)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (isJust, isNothing)
-import Data.Semigroup ((<>))
 import Text.URI.Parser.ByteString
 import Text.URI.Parser.Text
 import Text.URI.Render
 import Text.URI.Types
 import qualified Data.List.NonEmpty as NE
+
+#if !MIN_VERSION_base(4,13,0)
+import Data.Semigroup ((<>))
+#endif
 
 -- | The empty 'URI'.
 --

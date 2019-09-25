@@ -9,7 +9,6 @@
 --
 -- URI renders, an internal module.
 
-{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE ConstraintKinds     #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleContexts    #-}
@@ -32,11 +31,11 @@ where
 
 import Data.ByteString (ByteString)
 import Data.Char (chr, intToDigit)
+import Data.Kind (Type)
 import Data.List (intersperse)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Proxy
 import Data.Reflection
-import Data.Semigroup (Semigroup)
 import Data.String (IsString (..))
 import Data.Tagged
 import Data.Text (Text)
@@ -53,10 +52,6 @@ import qualified Data.Text.Encoding           as TE
 import qualified Data.Text.Lazy               as TL
 import qualified Data.Text.Lazy.Builder       as TLB
 import qualified Data.Text.Lazy.Builder.Int   as TLB
-
-#if !MIN_VERSION_base(4,11,0)
-import Data.Monoid
-#endif
 
 ----------------------------------------------------------------------------
 -- High-level wrappers
@@ -115,7 +110,7 @@ data Renders b = Renders
 equip
   :: forall b. (Word -> b)
   -> (forall l. RLabel l => RText l -> b)
-  -> (forall (s :: *). Reifies s (Renders b) => Tagged s b)
+  -> (forall (s :: Type). Reifies s (Renders b) => Tagged s b)
   -> b
 equip rWord rText f = reify Renders {..} $ \(Proxy :: Proxy s') ->
   unTagged (f :: Tagged s' b)
@@ -133,7 +128,7 @@ renderText = Tagged . rText (reflect (Proxy :: Proxy s))
 ----------------------------------------------------------------------------
 -- Generic render
 
-type Render a b = forall (s :: *).
+type Render a b = forall (s :: Type).
   (Semigroup b, Monoid b, IsString b, Reifies s (Renders b))
   => a
   -> Tagged s b
