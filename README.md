@@ -211,7 +211,7 @@ Examples:
 Issues, bugs, and questions may be reported in [the GitHub issue tracker for
 this project](https://github.com/mrkkrp/modern-uri/issues).
 
-Pull requests are also welcome and will be reviewed quickly.
+Pull requests are also welcome.
 
 ## License
 
