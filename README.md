@@ -14,11 +14,11 @@ https://tools.ietf.org/html/rfc3986
 
 The `modern-uri` package features:
 
-* Correct by construction `URI` data type. Correctness is ensured by
-  guaranteeing that every sub-component of the `URI` record is by itself
+* Correct by construction `URI` data type. The correctness is ensured by
+  making sure that every sub-component of the `URI` record is by itself
   cannot be invalid. This boils down to careful use of types and a set of
-  smart constructors for things like scheme, host, etc.
-* Textual components in the `URI` data type represented as `Text` rather
+  smart constructors.
+* Textual components in the `URI` data type are represented as `Text` rather
   than `ByteString`, because they are percent-decoded and so they can
   contain characters outside of ASCII range (i.e. Unicode). This allows for
   easier manipulation of `URI`s, while encoding and decoding headaches are
@@ -82,10 +82,9 @@ URI
 In this library we use quite a few refined text values. They only can be
 constructed by using smart constructors like `mkScheme :: MonadThrow m =>
 Text -> m (RText 'Scheme)`. For example, if argument to `mkScheme` is not a
-valid scheme, an exception will be thrown. Actually this is not necessarily
-so because there are pure monads that are instances of the `MonadThrow` type
-class, and so the smart constructors may be used in e.g. the `Maybe` monad
-as well.
+valid scheme, an exception will be thrown. Note that monads such as `Maybe`
+are also instances of the `MonadThrow` type class, and so the smart
+constructors may be used in pure setting as well.
 
 There is a smart constructor that can make an entire `URI` too, it's called
 (unsurprisingly) `mkURI`:
@@ -105,8 +104,8 @@ URI
   , uriFragment = Nothing }
 ```
 
-If argument of `mkURI` is not a valid URI, then an exception will be thrown.
-The exception will contain full context and the actual parse error.
+If the argument of `mkURI` is not a valid URI, then an exception will be
+thrown. The exception will contain full context and the actual parse error.
 
 If some refined text value or `URI` is known statically at compile time, we
 can use Template Haskell, namely the “quasi quotes” feature. To do so import
@@ -132,16 +131,13 @@ URI
 
 Note how the value returned by the `url` quasi quote is pure, its
 construction cannot fail because when there is an invalid URI inside the
-quote it's a compilation error.
+quote it's a compilation error. The `Text.URI.QQ` module has quasi-quoters
+for scheme, host, and other components.
 
-The `Text.URI.QQ` module has quasi quoters for scheme, host, and other
-things, check it out.
-
-Finally the package provides two Megaparsec parsers: `parser` and
+Finally, the package provides two Megaparsec parsers: `parser` and
 `parserBs`. The first works on strict `Text`, while other one works on
 strict `ByteString`s. You can use the parsers in a bigger Megaparsec parser
-to parse `URI`s. To get started with Megaparsec, see [its Hackage
-page](https://hackage.haskell.org/package/megaparsec).
+to parse `URI`s.
 
 ### Inspection and manipulation
 
