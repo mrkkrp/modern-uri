@@ -1,4 +1,7 @@
-## Unreleased
+## Modern URI 0.3.2.0
+
+* Quasi-quoters from `Text.URI.QQ` now can be used in pattern context when
+  the `ViewPatterns` extension is enabled.
 
 * Dropped support for GHC 8.2.x.
 
