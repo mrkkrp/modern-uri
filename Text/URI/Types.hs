@@ -9,6 +9,7 @@
 --
 -- 'URI' types, an internal module.
 
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE DeriveGeneric       #-}
@@ -117,6 +118,9 @@ instance NFData URI
 
 instance TH.Lift URI where
   lift = liftData
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = TH.unsafeTExpCoerce . TH.lift
+#endif
 
 -- | Make a given 'URI' reference absolute using the supplied @'RText'
 -- 'Scheme'@ if necessary.
@@ -156,6 +160,9 @@ instance NFData Authority
 
 instance TH.Lift Authority where
   lift = liftData
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = TH.unsafeTExpCoerce . TH.lift
+#endif
 
 -- | User info as a combination of username and password.
 
@@ -178,6 +185,9 @@ instance NFData UserInfo
 
 instance TH.Lift UserInfo where
   lift = liftData
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = TH.unsafeTExpCoerce . TH.lift
+#endif
 
 -- | Query parameter either in the form of flag or as a pair of key and
 -- value. A key cannot be empty, while a value can.
@@ -200,6 +210,9 @@ instance NFData QueryParam
 
 instance TH.Lift QueryParam where
   lift = liftData
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = TH.unsafeTExpCoerce . TH.lift
+#endif
 
 -- | Parse exception thrown by 'mkURI' when a given 'Text' value cannot be
 -- parsed as a 'URI'.
@@ -230,6 +243,9 @@ instance NFData (RText l) where
 
 instance Typeable l => TH.Lift (RText l) where
   lift = liftData
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = TH.unsafeTExpCoerce . TH.lift
+#endif
 
 -- | Refined text labels.
 
