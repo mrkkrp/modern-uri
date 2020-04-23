@@ -1,3 +1,9 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
+
 -- |
 -- Module      :  Text.URI.Parser.ByteString
 -- Copyright   :  © 2017–present Mark Karpov
@@ -8,49 +14,42 @@
 -- Portability :  portable
 --
 -- URI parser for string 'ByteString', an internal module.
-
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE RecordWildCards   #-}
-
 module Text.URI.Parser.ByteString
-  ( parserBs )
+  ( parserBs,
+  )
 where
 
 import Control.Monad
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State.Strict
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import Data.Char
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Maybe (isJust, catMaybes, maybeToList)
+import qualified Data.List.NonEmpty as NE
+import Data.Maybe (catMaybes, isJust, maybeToList)
+import qualified Data.Set as E
 import Data.Text (Text)
+import qualified Data.Text.Encoding as TE
 import Data.Void
 import Data.Word (Word8)
 import Text.Megaparsec
 import Text.Megaparsec.Byte
-import Text.URI.Types hiding (pHost)
-import qualified Data.ByteString            as B
-import qualified Data.List.NonEmpty         as NE
-import qualified Data.Set                   as E
-import qualified Data.Text.Encoding         as TE
 import qualified Text.Megaparsec.Byte.Lexer as L
+import Text.URI.Types hiding (pHost)
 
 -- | This parser can be used to parse 'URI' from strict 'ByteString'.
 -- Remember to use a concrete non-polymorphic parser type for efficiency.
 --
 -- @since 0.0.2.0
-
 parserBs :: MonadParsec e ByteString m => m URI
 parserBs = do
-  uriScheme          <- optional (try pScheme)
-  mauth              <- optional pAuthority
+  uriScheme <- optional (try pScheme)
+  mauth <- optional pAuthority
   (absPath, uriPath) <- pPath (isJust mauth)
-  uriQuery           <- option [] pQuery
-  uriFragment        <- optional pFragment
+  uriQuery <- option [] pQuery
+  uriFragment <- optional pFragment
   let uriAuthority = maybe (Left absPath) Right mauth
   return URI {..}
 {-# INLINEABLE parserBs #-}
@@ -58,10 +57,10 @@ parserBs = do
 
 pScheme :: MonadParsec e ByteString m => m (RText 'Scheme)
 pScheme = do
-  x  <- asciiAlphaChar
+  x <- asciiAlphaChar
   xs <- many (asciiAlphaNumChar <|> char 43 <|> char 45 <|> char 46)
   void (char 58)
-  liftR mkScheme (x:xs)
+  liftR mkScheme (x : xs)
 {-# INLINE pScheme #-}
 
 pAuthority :: MonadParsec e ByteString m => m Authority
@@ -74,17 +73,19 @@ pAuthority = do
 {-# INLINE pAuthority #-}
 
 -- | Parser that can parse host names.
-
 pHost :: MonadParsec e ByteString m => m [Word8]
-pHost = choice
-  [ try (asConsumed ipLiteral)
-  , try (asConsumed ipv4Address)
-  , regName ]
+pHost =
+  choice
+    [ try (asConsumed ipLiteral),
+      try (asConsumed ipv4Address),
+      regName
+    ]
   where
     asConsumed :: MonadParsec e ByteString m => m a -> m [Word8]
     asConsumed p = B.unpack . fst <$> match p
-    ipLiteral = between (char 91) (char 93) $
-      try ipv6Address <|> ipvFuture
+    ipLiteral =
+      between (char 91) (char 93) $
+        try ipv6Address <|> ipvFuture
     octet = do
       o <- getOffset
       (toks, x) <- match L.decimal
@@ -99,17 +100,17 @@ pHost = choice
       o <- getOffset
       (toks, xs) <- match $ do
         xs' <- maybeToList <$> optional ([] <$ string "::")
-        xs  <- flip sepBy1 (char 58) $ do
+        xs <- flip sepBy1 (char 58) $ do
           (skip, hasMore) <- lookAhead . hidden $ do
-            skip    <- option False (True <$ char 58)
+            skip <- option False (True <$ char 58)
             hasMore <- option False (True <$ hexDigitChar)
             return (skip, hasMore)
           case (skip, hasMore) of
-            (True,  True)  -> return []
-            (True,  False) -> [] <$ char 58
-            (False, _)     -> count' 1 4 hexDigitChar
+            (True, True) -> return []
+            (True, False) -> [] <$ char 58
+            (False, _) -> count' 1 4 hexDigitChar
         return (xs' ++ xs)
-      let nskips  = length (filter null xs)
+      let nskips = length (filter null xs)
           npieces = length xs
       unless (nskips < 2 && (npieces == 8 || (nskips == 1 && npieces < 8))) $ do
         setOffset o
@@ -127,16 +128,19 @@ pHost = choice
       case mx of
         Nothing -> return []
         Just x -> do
-          let r = ch <|> try
-                (char 45 <* (lookAhead . try) (ch <|> char 45))
+          let r =
+                ch
+                  <|> try
+                    (char 45 <* (lookAhead . try) (ch <|> char 45))
           xs <- many r
-          return (x:xs)
+          return (x : xs)
 
 pUserInfo :: MonadParsec e ByteString m => m UserInfo
 pUserInfo = try $ do
-  uiUsername <- label "username" $
-    many (unreservedChar <|> percentEncChar <|> subDelimChar)
-      >>= liftR mkUsername
+  uiUsername <-
+    label "username" $
+      many (unreservedChar <|> percentEncChar <|> subDelimChar)
+        >>= liftR mkUsername
   uiPassword <- optional $ do
     void (char 58)
     many (unreservedChar <|> percentEncChar <|> subDelimChar <|> char 58)
@@ -145,23 +149,25 @@ pUserInfo = try $ do
   return UserInfo {..}
 {-# INLINE pUserInfo #-}
 
-pPath :: MonadParsec e ByteString m
-  => Bool
-  -> m (Bool, Maybe (Bool, NonEmpty (RText 'PathPiece)))
+pPath ::
+  MonadParsec e ByteString m =>
+  Bool ->
+  m (Bool, Maybe (Bool, NonEmpty (RText 'PathPiece)))
 pPath hasAuth = do
   doubleSlash <- lookAhead (option False (True <$ string "//"))
   when (doubleSlash && not hasAuth) $
-    (unexpected . Tokens . NE.fromList) [47,47]
+    (unexpected . Tokens . NE.fromList) [47, 47]
   absPath <- option False (True <$ char 47)
-  (rawPieces, trailingSlash) <- flip runStateT False $
-    flip sepBy (char 47) . label "path piece" $ do
+  (rawPieces, trailingSlash) <- flip runStateT False
+    $ flip sepBy (char 47) . label "path piece"
+    $ do
       x <- many pchar
       put (null x)
       return x
   pieces <- mapM (liftR mkPathPiece) (filter (not . null) rawPieces)
   return
-    ( absPath
-    , case NE.nonEmpty pieces of
+    ( absPath,
+      case NE.nonEmpty pieces of
         Nothing -> Nothing
         Just ps -> Just (trailingSlash, ps)
     )
@@ -175,29 +181,31 @@ pQuery = do
     let p = many (pchar' <|> char 47 <|> char 63)
     k' <- p
     mv <- optional (char 61 *> p)
-    k  <- liftR mkQueryKey k'
+    k <- liftR mkQueryKey k'
     if null k'
       then return Nothing
       else Just <$> case mv of
-             Nothing -> return (QueryFlag k)
-             Just v  -> QueryParam k <$> liftR mkQueryValue v
+        Nothing -> return (QueryFlag k)
+        Just v -> QueryParam k <$> liftR mkQueryValue v
 {-# INLINE pQuery #-}
 
 pFragment :: MonadParsec e ByteString m => m (RText 'Fragment)
 pFragment = do
   void (char 35)
-  xs <- many . label "fragment character" $
-    pchar <|> char 47 <|> char 63
+  xs <-
+    many . label "fragment character" $
+      pchar <|> char 47 <|> char 63
   liftR mkFragment xs
 {-# INLINE pFragment #-}
 
 ----------------------------------------------------------------------------
 -- Helpers
 
-liftR :: MonadParsec e s m
-  => (forall n. MonadThrow n => Text -> n r)
-  -> [Word8]
-  -> m r
+liftR ::
+  MonadParsec e s m =>
+  (forall n. MonadThrow n => Text -> n r) ->
+  [Word8] ->
+  m r
 liftR f = maybe empty return . f . TE.decodeUtf8 . B.pack
 {-# INLINE liftR #-}
 
@@ -229,41 +237,45 @@ subDelimChar = oneOf s <?> "sub-delimiter"
 {-# INLINE subDelimChar #-}
 
 pchar :: MonadParsec e ByteString m => m Word8
-pchar = choice
-  [ unreservedChar
-  , percentEncChar
-  , subDelimChar
-  , char 58
-  , char 64 ]
+pchar =
+  choice
+    [ unreservedChar,
+      percentEncChar,
+      subDelimChar,
+      char 58,
+      char 64
+    ]
 {-# INLINE pchar #-}
 
 pchar' :: MonadParsec e ByteString m => m Word8
-pchar' = choice
-  [ unreservedChar
-  , percentEncChar
-  , char 43 >> pure 32
-  , oneOf s <?> "sub-delimiter"
-  , char 58
-  , char 64 ]
+pchar' =
+  choice
+    [ unreservedChar,
+      percentEncChar,
+      char 43 >> pure 32,
+      oneOf s <?> "sub-delimiter",
+      char 58,
+      char 64
+    ]
   where
     s = E.fromList (fromIntegral . ord <$> "!$'()*,;")
 {-# INLINE pchar' #-}
 
 isAsciiAlpha :: Word8 -> Bool
 isAsciiAlpha x
-  | 65 <= x && x <= 90  = True
+  | 65 <= x && x <= 90 = True
   | 97 <= x && x <= 122 = True
-  | otherwise           = False
+  | otherwise = False
 
 isAsciiAlphaNum :: Word8 -> Bool
 isAsciiAlphaNum x
-  | isAsciiAlpha x     = True
+  | isAsciiAlpha x = True
   | 48 <= x && x <= 57 = True
-  | otherwise          = False
+  | otherwise = False
 
 restoreDigit :: Word8 -> Word8
 restoreDigit x
-  | 48 <= x && x <= 57  = x - 48
-  | 65 <= x && x <= 70  = x - 55
+  | 48 <= x && x <= 57 = x - 48
+  | 65 <= x && x <= 70 = x - 55
   | 97 <= x && x <= 102 = x - 87
-  | otherwise           = error "Text.URI.Parser.restoreDigit: bad input"
+  | otherwise = error "Text.URI.Parser.restoreDigit: bad input"

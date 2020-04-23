@@ -1,10 +1,13 @@
-{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE ViewPatterns      #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns #-}
 
-module Text.QQSpec (spec) where
+module Text.QQSpec
+  ( spec,
+  )
+where
 
 import Test.Hspec
 import Text.URI
@@ -12,7 +15,6 @@ import qualified Text.URI.QQ as QQ
 
 spec :: Spec
 spec = do
-
   describe "uri" $ do
     it "works as an expression" $ do
       let uriQQ = [QQ.uri|https://markkarpov.com|]
@@ -113,9 +115,11 @@ spec = do
         _ -> shouldHaveMatchedAlready
 
 shouldNotMatch :: Expectation
-shouldNotMatch = expectationFailure
-  "First case should not have matched, but did"
+shouldNotMatch =
+  expectationFailure
+    "First case should not have matched, but did"
 
 shouldHaveMatchedAlready :: Expectation
-shouldHaveMatchedAlready = expectationFailure
-  "Second case should have matched, but didn't"
+shouldHaveMatchedAlready =
+  expectationFailure
+    "Second case should have matched, but didn't"

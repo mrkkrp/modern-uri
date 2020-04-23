@@ -68,15 +68,19 @@ it manually like so:
 λ> let uri = URI.URI (Just scheme) (Right (URI.Authority Nothing host Nothing)) Nothing [] Nothing
 λ> uri
 URI
-  { uriScheme = Just "https"
-  , uriAuthority = Right
-      (Authority
-        { authUserInfo = Nothing
-        , authHost = "markkarpov.com"
-        , authPort = Nothing })
-  , uriPath = Nothing
-  , uriQuery = []
-  , uriFragment = Nothing }
+  { uriScheme = Just "https",
+    uriAuthority =
+      Right
+        ( Authority
+            { authUserInfo = Nothing,
+              authHost = "markkarpov.com",
+              authPort = Nothing
+            }
+        ),
+    uriPath = Nothing,
+    uriQuery = [],
+    uriFragment = Nothing
+  }
 ```
 
 In this library we use quite a few refined text values. They only can be
@@ -93,15 +97,19 @@ There is a smart constructor that can make an entire `URI` too, it's called
 λ> uri <- URI.mkURI "https://markkarpov.com"
 λ> uri
 URI
-  { uriScheme = Just "https"
-  , uriAuthority = Right
-      (Authority
-        { authUserInfo = Nothing
-        , authHost = "markkarpov.com"
-        , authPort = Nothing })
-  , uriPath = Nothing
-  , uriQuery = []
-  , uriFragment = Nothing }
+  { uriScheme = Just "https",
+    uriAuthority =
+      Right
+        ( Authority
+            { authUserInfo = Nothing,
+              authHost = "markkarpov.com",
+              authPort = Nothing
+            }
+        ),
+    uriPath = Nothing,
+    uriQuery = [],
+    uriFragment = Nothing
+  }
 ```
 
 If the argument of `mkURI` is not a valid URI, then an exception will be
@@ -118,15 +126,19 @@ like so:
 λ> let uri = [QQ.uri|https://markkarpov.com|]
 λ> uri
 URI
-  { uriScheme = Just "https"
-  , uriAuthority = Right
-      (Authority
-        { authUserInfo = Nothing
-        , authHost = "markkarpov.com"
-        , authPort = Nothing })
-  , uriPath = Nothing
-  , uriQuery = []
-  , uriFragment = Nothing }
+  { uriScheme = Just "https",
+    uriAuthority =
+      Right
+        ( Authority
+            { authUserInfo = Nothing,
+              authHost = "markkarpov.com",
+              authPort = Nothing
+            }
+        ),
+    uriPath = Nothing,
+    uriQuery = [],
+    uriFragment = Nothing
+  }
 ```
 
 Note how the value returned by the `url` quasi quote is pure, its
