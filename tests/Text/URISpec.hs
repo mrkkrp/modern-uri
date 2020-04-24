@@ -2,10 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Text.URISpec
-  ( spec,
-  )
-where
+module Text.URISpec (spec) where
 
 import Control.Monad
 import Data.ByteString (ByteString)

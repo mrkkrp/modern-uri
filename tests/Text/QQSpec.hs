@@ -4,10 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Text.QQSpec
-  ( spec,
-  )
-where
+module Text.QQSpec (spec) where
 
 import Test.Hspec
 import Text.URI

@@ -1,9 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Main
-  ( main,
-  )
-where
+module Main (main) where
 
 import Data.ByteString (ByteString)
 import Data.Maybe (fromJust)
