@@ -63,29 +63,25 @@ spec = do
       it "with renderStr" $
         URI.renderStr URI.emptyURI `shouldBe` ""
   describe "makeAbsolute" $ do
-    context "when given URI already has scheme"
-      $ it "returns that URI unchanged"
-      $ property
-      $ \scheme uri ->
-        isJust (uriScheme uri)
-          ==> uriScheme (URI.makeAbsolute scheme uri) `shouldBe` uriScheme uri
-    context "when given URI has no scheme"
-      $ it "sets the specified scheme"
-      $ property
-      $ \scheme uri ->
-        isNothing (uriScheme uri)
-          ==> uriScheme (URI.makeAbsolute scheme uri) `shouldBe` Just scheme
+    context "when given URI already has scheme" $
+      it "returns that URI unchanged" $
+        property $ \scheme uri ->
+          isJust (uriScheme uri)
+            ==> uriScheme (URI.makeAbsolute scheme uri) `shouldBe` uriScheme uri
+    context "when given URI has no scheme" $
+      it "sets the specified scheme" $
+        property $ \scheme uri ->
+          isNothing (uriScheme uri)
+            ==> uriScheme (URI.makeAbsolute scheme uri) `shouldBe` Just scheme
   describe "isPathAbsolute" $ do
-    context "when URI has authority component"
-      $ it "returns True"
-      $ property
-      $ \uri auth ->
-        URI.isPathAbsolute (uri {uriAuthority = Right auth}) `shouldBe` True
-    context "when URI has no authority component"
-      $ it "return what is inside of Left in uriAuthority"
-      $ property
-      $ \uri b ->
-        URI.isPathAbsolute (uri {uriAuthority = Left b}) `shouldBe` b
+    context "when URI has authority component" $
+      it "returns True" $
+        property $ \uri auth ->
+          URI.isPathAbsolute (uri {uriAuthority = Right auth}) `shouldBe` True
+    context "when URI has no authority component" $
+      it "return what is inside of Left in uriAuthority" $
+        property $ \uri b ->
+          URI.isPathAbsolute (uri {uriAuthority = Left b}) `shouldBe` b
   describe "mkScheme" $ do
     it "accepts valid schemes" $ do
       URI.mkScheme "http" `shouldRText` "http"
@@ -132,57 +128,52 @@ spec = do
       URI.mkHost "some@thing"
         `shouldThrow` (== RTextException Host "some@thing")
   describe "mkUsername" $ do
-    it "accepts valid usernames"
-      $ property
-      $ \txt -> not (T.null txt) ==> do
-        username <- URI.mkUsername txt
-        URI.unRText username `shouldBe` txt
+    it "accepts valid usernames" $
+      property $ \txt ->
+        not (T.null txt) ==> do
+          username <- URI.mkUsername txt
+          URI.unRText username `shouldBe` txt
     it "rejects invalid usernames" $
       URI.mkUsername "" `shouldThrow` (== RTextException Username "")
-  describe "mkPassword"
-    $ it "lifts any text into password"
-    $ property
-    $ \txt -> do
-      pass <- URI.mkPassword txt
-      URI.unRText pass `shouldBe` txt
+  describe "mkPassword" $
+    it "lifts any text into password" $
+      property $ \txt -> do
+        pass <- URI.mkPassword txt
+        URI.unRText pass `shouldBe` txt
   describe "mkPathPiece" $ do
-    it "accepts valid path pieces"
-      $ property
-      $ \txt -> not (T.null txt) ==> do
-        pp <- URI.mkPathPiece txt
-        URI.unRText pp `shouldBe` txt
+    it "accepts valid path pieces" $
+      property $ \txt ->
+        not (T.null txt) ==> do
+          pp <- URI.mkPathPiece txt
+          URI.unRText pp `shouldBe` txt
     it "rejects invalid path pieces" $
       URI.mkPathPiece "" `shouldThrow` (== RTextException PathPiece "")
   describe "mkQueryKey" $ do
-    it "accepts valid query keys"
-      $ property
-      $ \txt -> not (T.null txt) ==> do
-        k <- URI.mkQueryKey txt
-        URI.unRText k `shouldBe` txt
+    it "accepts valid query keys" $
+      property $ \txt ->
+        not (T.null txt) ==> do
+          k <- URI.mkQueryKey txt
+          URI.unRText k `shouldBe` txt
     it "rejects invalid query keys" $
       URI.mkQueryKey "" `shouldThrow` (== RTextException QueryKey "")
-  describe "mkQueryValue"
-    $ it "lifts any text into query value"
-    $ property
-    $ \txt -> do
-      v <- URI.mkQueryValue txt
-      URI.unRText v `shouldBe` txt
-  describe "mkFragment"
-    $ it "lifts any text into fragment"
-    $ property
-    $ \txt -> do
-      fragment <- URI.mkFragment txt
-      URI.unRText fragment `shouldBe` txt
-  describe "parse and render"
-    $ it "parser and render are consistent"
-    $ property
-    $ \uri ->
-      shouldParse' (URI.render uri) uri
-  describe "parseBs and renderBs"
-    $ it "parser and render are consistent"
-    $ property
-    $ \uri ->
-      shouldParseBs (URI.renderBs uri) uri
+  describe "mkQueryValue" $
+    it "lifts any text into query value" $
+      property $ \txt -> do
+        v <- URI.mkQueryValue txt
+        URI.unRText v `shouldBe` txt
+  describe "mkFragment" $
+    it "lifts any text into fragment" $
+      property $ \txt -> do
+        fragment <- URI.mkFragment txt
+        URI.unRText fragment `shouldBe` txt
+  describe "parse and render" $
+    it "parser and render are consistent" $
+      property $ \uri ->
+        shouldParse' (URI.render uri) uri
+  describe "parseBs and renderBs" $
+    it "parser and render are consistent" $
+      property $ \uri ->
+        shouldParseBs (URI.renderBs uri) uri
   describe "parse" $ do
     it "rejects Unicode in scheme" $
       parse urip "" "что:something"
@@ -261,60 +252,59 @@ spec = do
   describe "render" $ do
     it "sort of works" $
       fmap URI.render mkTestURI `shouldReturn` testURI
-    context "when URI has scheme"
-      $ it "escapes colon in path components"
-      $ (URI.render <$> URI.mkURI "https:/fir:st/se:cond")
-        `shouldReturn` "https:/fir%3ast/se%3acond"
-    context "when URI is a network-path reference"
-      $ it "does not escape colon in path components"
-      $ (URI.render <$> URI.mkURI "//host/fir:st/se:cond")
-        `shouldReturn` "//host/fir%3ast/se%3acond"
-    context "when URI is a relative-path reference"
-      $ it "escapes colon but only in the first path segment"
-      $ do
-        firstSeg <- URI.mkPathPiece "fir:st"
-        secondSeg <- URI.mkPathPiece "se:cond"
-        let uri =
-              URI.emptyURI
-                { uriPath = Just (False, firstSeg :| [secondSeg])
-                }
-        URI.render uri `shouldBe` "fir%3ast/se%3acond"
-  describe "renderBs"
-    $ it "sort of works"
-    $ fmap URI.renderBs mkTestURI `shouldReturn` testURI
-  describe "renderStr"
-    $ it "sort of works"
-    $ fmap URI.renderStr mkTestURI `shouldReturn` testURI
+    context "when URI has scheme" $
+      it "escapes colon in path components" $
+        (URI.render <$> URI.mkURI "https:/fir:st/se:cond")
+          `shouldReturn` "https:/fir%3ast/se%3acond"
+    context "when URI is a network-path reference" $
+      it "does not escape colon in path components" $
+        (URI.render <$> URI.mkURI "//host/fir:st/se:cond")
+          `shouldReturn` "//host/fir%3ast/se%3acond"
+    context "when URI is a relative-path reference" $
+      it "escapes colon but only in the first path segment" $
+        do
+          firstSeg <- URI.mkPathPiece "fir:st"
+          secondSeg <- URI.mkPathPiece "se:cond"
+          let uri =
+                URI.emptyURI
+                  { uriPath = Just (False, firstSeg :| [secondSeg])
+                  }
+          URI.render uri `shouldBe` "fir%3ast/se%3acond"
+  describe "renderBs" $
+    it "sort of works" $
+      fmap URI.renderBs mkTestURI `shouldReturn` testURI
+  describe "renderStr" $
+    it "sort of works" $
+      fmap URI.renderStr mkTestURI `shouldReturn` testURI
   describe "relativeTo" $ do
     let testResolution r e = do
           base <- URI.mkURI "http://a/b/c/d;p?q"
           reference <- URI.mkURI r
           expected <- URI.mkURI e
           URI.relativeTo reference base `shouldBe` Just expected
-    context "when reference URI has no scheme"
-      $ forM_ resolutionTests
-      $ \(r, e) ->
-        it ("resolves reference path \"" <> T.unpack r <> "\"") $
-          testResolution r e
+    context "when reference URI has no scheme" $
+      forM_ resolutionTests $
+        \(r, e) ->
+          it ("resolves reference path \"" <> T.unpack r <> "\"") $
+            testResolution r e
     context "when reference URI has scheme" $ do
-      context "when the scheme is the same as the scheme of base URI"
-        $ it "reference URI is preserved intact"
-        $ testResolution "http:g" "http:g"
-      context "when the scheme is different from the scheme of base URI"
-        $ it "reference URI is preserved intact"
-        $ testResolution "ftp:g" "ftp:g"
-    context "when base URI has no scheme"
-      $ it "returns Nothing"
-      $ property
-      $ \reference base ->
-        isNothing (uriScheme base)
-          ==> URI.relativeTo reference base `shouldBe` Nothing
-    context "when base URI has scheme"
-      $ it "the resulting URI always has scheme"
-      $ property
-      $ \reference base -> isJust (uriScheme base) ==> do
-        let scheme = URI.relativeTo reference base >>= uriScheme
-        scheme `shouldSatisfy` isJust
+      context "when the scheme is the same as the scheme of base URI" $
+        it "reference URI is preserved intact" $
+          testResolution "http:g" "http:g"
+      context "when the scheme is different from the scheme of base URI" $
+        it "reference URI is preserved intact" $
+          testResolution "ftp:g" "ftp:g"
+    context "when base URI has no scheme" $
+      it "returns Nothing" $
+        property $ \reference base ->
+          isNothing (uriScheme base)
+            ==> URI.relativeTo reference base `shouldBe` Nothing
+    context "when base URI has scheme" $
+      it "the resulting URI always has scheme" $
+        property $ \reference base ->
+          isJust (uriScheme base) ==> do
+            let scheme = URI.relativeTo reference base >>= uriScheme
+            scheme `shouldSatisfy` isJust
 
 ----------------------------------------------------------------------------
 -- Helpers

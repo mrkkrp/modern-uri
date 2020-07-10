@@ -238,7 +238,8 @@ percentEncode rtxt =
         Nothing -> Nothing
         Just (w, bs'') ->
           Just $
-            if  | sap && w == 32 -> ('+', (bs'', []))
+            if
+                | sap && w == 32 -> ('+', (bs'', []))
                 | nne w -> (chr (fromIntegral w), (bs'', []))
                 | otherwise ->
                   let c :| cs = encodeByte w

@@ -103,9 +103,8 @@ pPath hasAuth = do
   when (doubleSlash && not hasAuth) $
     (unexpected . Tokens . NE.fromList) "//"
   absPath <- option False (True <$ char '/')
-  (rawPieces, trailingSlash) <- flip runStateT False
-    $ flip sepBy (char '/') . label "path piece"
-    $ do
+  (rawPieces, trailingSlash) <- flip runStateT False $
+    flip sepBy (char '/') . label "path piece" $ do
       x <- many pchar
       put (null x)
       return x
@@ -129,9 +128,10 @@ pQuery = do
     k <- liftR mkQueryKey k'
     if null k'
       then return Nothing
-      else Just <$> case mv of
-        Nothing -> return (QueryFlag k)
-        Just v -> QueryParam k <$> liftR mkQueryValue v
+      else
+        Just <$> case mv of
+          Nothing -> return (QueryFlag k)
+          Just v -> QueryParam k <$> liftR mkQueryValue v
 {-# INLINE pQuery #-}
 
 pFragment :: MonadParsec e Text m => m (RText 'Fragment)
