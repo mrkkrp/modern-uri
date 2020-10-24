@@ -28,6 +28,7 @@ module Text.URI
   ( -- * Data types
     URI (..),
     mkURI,
+    mkURIBs,
     emptyURI,
     makeAbsolute,
     isPathAbsolute,
@@ -36,6 +37,7 @@ module Text.URI
     UserInfo (..),
     QueryParam (..),
     ParseException (..),
+    ParseExceptionBs (..),
 
     -- * Refined text
     -- $rtext

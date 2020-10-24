@@ -30,6 +30,7 @@ module Text.URI.Types
     UserInfo (..),
     QueryParam (..),
     ParseException (..),
+    ParseExceptionBs (..),
 
     -- * Refined text
     RText,
@@ -53,6 +54,7 @@ where
 import Control.DeepSeq
 import Control.Monad
 import Control.Monad.Catch (Exception (..), MonadThrow (..))
+import Data.ByteString (ByteString)
 import Data.Char
 import Data.Data (Data)
 import Data.List (intercalate)
@@ -233,6 +235,20 @@ instance Exception ParseException where
   displayException (ParseException b) = errorBundlePretty b
 
 instance NFData ParseException
+
+-- | Parse exception thrown by 'mkURIBs' when a given 'ByteString' value cannot be
+-- parsed as a 'URI'.
+--
+-- @since 0.3.3.0
+newtype ParseExceptionBs
+  = -- | Arguments are: original input and parse error
+    ParseExceptionBs (ParseErrorBundle ByteString Void)
+  deriving (Show, Eq, Data, Typeable, Generic)
+
+instance Exception ParseExceptionBs where
+  displayException (ParseExceptionBs b) = errorBundlePretty b
+
+instance NFData ParseExceptionBs
 
 ----------------------------------------------------------------------------
 -- Refined text

@@ -15,7 +15,8 @@
 --
 -- URI parser for string 'ByteString', an internal module.
 module Text.URI.Parser.ByteString
-  ( parserBs,
+  ( mkURIBs,
+    parserBs,
   )
 where
 
@@ -38,6 +39,21 @@ import Text.Megaparsec
 import Text.Megaparsec.Byte
 import qualified Text.Megaparsec.Byte.Lexer as L
 import Text.URI.Types hiding (pHost)
+
+-- | Construct a 'URI' from 'ByteString'. The input you pass to 'mkURIBs'
+-- must be a valid URI as per RFC 3986, that is, its components should be
+-- percent-encoded where necessary. In case of parse failure
+-- 'ParseExceptionBs' is thrown.
+--
+-- This function uses the 'parserBs' parser under the hood, which you can also
+-- use directly in a Megaparsec parser.
+--
+-- @since 0.3.3.0
+mkURIBs :: MonadThrow m => ByteString -> m URI
+mkURIBs input =
+  case runParser (parserBs <* eof :: Parsec Void ByteString URI) "" input of
+    Left b -> throwM (ParseExceptionBs b)
+    Right x -> return x
 
 -- | This parser can be used to parse 'URI' from strict 'ByteString'.
 -- Remember to use a concrete non-polymorphic parser type for efficiency.

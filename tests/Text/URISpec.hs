@@ -52,6 +52,10 @@ spec = do
               }
           s = "что-то"
       URI.mkURI s `shouldThrow` (== URI.ParseException b)
+  describe "mkURIBs" $ do
+    it "accepts valid URIs" $ do
+      uri <- mkTestURI
+      URI.mkURIBs testURI `shouldReturn` uri
   describe "emptyURI" $ do
     it "parsing of empty input produces emptyURI" $
       URI.mkURI "" `shouldReturn` URI.emptyURI
