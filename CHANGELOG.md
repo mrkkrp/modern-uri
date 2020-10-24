@@ -1,3 +1,7 @@
+## Modern URI 0.3.3.0
+
+* Added `mkURIBs` for parsing `ByteString` as a `URI`.
+
 ## Modern URI 0.3.2.0
 
 * Quasi-quoters from `Text.URI.QQ` now can be used in pattern context when
