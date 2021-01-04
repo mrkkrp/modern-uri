@@ -31,8 +31,8 @@ where
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Lazy.Builder as BLB
 import Data.Char (chr, intToDigit)
 import Data.Kind (Type)
 import Data.List (intersperse)
@@ -70,14 +70,14 @@ render' x =
 
 -- | Render a given 'URI' value as a strict 'ByteString'.
 renderBs :: URI -> ByteString
-renderBs = BL.toStrict . BLB.toLazyByteString . renderBs'
+renderBs = BL.toStrict . BB.toLazyByteString . renderBs'
 
--- | Render a given 'URI' value as a 'BLB.Builder'.
-renderBs' :: URI -> BLB.Builder
+-- | Render a given 'URI' value as a 'BB.Builder'.
+renderBs' :: URI -> BB.Builder
 renderBs' x =
   equip
-    BLB.wordDec
-    (BLB.byteString . TE.encodeUtf8 . percentEncode)
+    BB.wordDec
+    (BB.byteString . TE.encodeUtf8 . percentEncode)
     (genericRender x)
 
 -- | Render a given 'URI' value as a 'String'.
