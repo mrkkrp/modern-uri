@@ -1,3 +1,7 @@
+## Modern URI 0.3.3.1
+
+* Works with `bytestring-0.11`.
+
 ## Modern URI 0.3.3.0
 
 * Added `mkURIBs` for parsing `ByteString` as a `URI`.
