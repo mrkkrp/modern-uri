@@ -1,3 +1,8 @@
+## Modern URI 0.3.4.0
+
+* URIs with authority component and without path are now rendered without
+  trailing slashes.
+
 ## Modern URI 0.3.3.1
 
 * Works with `bytestring-0.11`.

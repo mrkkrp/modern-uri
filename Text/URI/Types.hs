@@ -57,6 +57,7 @@ import Control.Monad.Catch (Exception (..), MonadThrow (..))
 import Data.ByteString (ByteString)
 import Data.Char
 import Data.Data (Data)
+import Data.Either (fromLeft)
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
@@ -142,7 +143,7 @@ makeAbsolute scheme URI {..} =
 --
 -- @since 0.1.0.0
 isPathAbsolute :: URI -> Bool
-isPathAbsolute = either id (const True) . uriAuthority
+isPathAbsolute = fromLeft True . uriAuthority
 
 -- | Authority component of 'URI'.
 data Authority = Authority
