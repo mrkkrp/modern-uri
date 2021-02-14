@@ -138,11 +138,12 @@ type Render a b =
   Tagged s b
 
 genericRender :: Render URI b
-genericRender uri@URI {..} =
+genericRender URI {..} =
   mconcat
     [ rJust rScheme uriScheme,
       rJust rAuthority (either (const Nothing) Just uriAuthority),
-      rPath (isPathAbsolute uri) uriPath,
+      rAbsPathSlash uriAuthority uriPath,
+      rPath uriPath,
       rQuery uriQuery,
       rJust rFragment uriFragment
     ]
@@ -174,16 +175,21 @@ rUserInfo UserInfo {..} =
     ]
 {-# INLINE rUserInfo #-}
 
-rPath :: Bool -> Render (Maybe (Bool, NonEmpty (RText 'PathPiece))) b
-rPath isAbsolute path = leading <> other
-  where
-    leading = if isAbsolute then "/" else mempty
-    other =
-      case path of
-        Nothing -> mempty
-        Just (trailingSlash, ps) ->
-          (mconcat . intersperse "/" . fmap renderText . NE.toList) ps
-            <> if trailingSlash then "/" else mempty
+rAbsPathSlash ::
+  Either Bool a ->
+  Render (Maybe (Bool, NonEmpty (RText 'PathPiece))) b
+rAbsPathSlash (Left isAbsolute) _ = if isAbsolute then "/" else mempty
+rAbsPathSlash (Right _) Nothing = mempty
+rAbsPathSlash (Right _) (Just _) = "/"
+{-# INLINE rAbsPathSlash #-}
+
+rPath :: Render (Maybe (Bool, NonEmpty (RText 'PathPiece))) b
+rPath path =
+  case path of
+    Nothing -> mempty
+    Just (trailingSlash, ps) ->
+      (mconcat . intersperse "/" . fmap renderText . NE.toList) ps
+        <> if trailingSlash then "/" else mempty
 {-# INLINE rPath #-}
 
 rQuery :: Render [QueryParam] b

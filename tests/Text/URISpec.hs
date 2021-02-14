@@ -265,15 +265,19 @@ spec = do
         (URI.render <$> URI.mkURI "//host/fir:st/se:cond")
           `shouldReturn` "//host/fir%3ast/se%3acond"
     context "when URI is a relative-path reference" $
-      it "escapes colon but only in the first path segment" $
-        do
-          firstSeg <- URI.mkPathPiece "fir:st"
-          secondSeg <- URI.mkPathPiece "se:cond"
-          let uri =
-                URI.emptyURI
-                  { uriPath = Just (False, firstSeg :| [secondSeg])
-                  }
-          URI.render uri `shouldBe` "fir%3ast/se%3acond"
+      it "escapes colon but only in the first path segment" $ do
+        firstSeg <- URI.mkPathPiece "fir:st"
+        secondSeg <- URI.mkPathPiece "se:cond"
+        let uri =
+              URI.emptyURI
+                { uriPath = Just (False, firstSeg :| [secondSeg])
+                }
+        URI.render uri `shouldBe` "fir%3ast/se%3acond"
+    context "when URI has no path" $
+      it "is rendered without trailing slash" $ do
+        let uriWithoutSlash = "https://example.com"
+        uri <- URI.mkURI uriWithoutSlash
+        URI.render uri `shouldBe` uriWithoutSlash
   describe "renderBs" $
     it "sort of works" $
       fmap URI.renderBs mkTestURI `shouldReturn` testURI
