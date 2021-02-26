@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
@@ -78,10 +77,6 @@ import Text.URI.Parser.ByteString
 import Text.URI.Parser.Text
 import Text.URI.Render
 import Text.URI.Types
-
-#if !MIN_VERSION_base(4,13,0)
-import Data.Semigroup ((<>))
-#endif
 
 -- | The empty 'URI'.
 --

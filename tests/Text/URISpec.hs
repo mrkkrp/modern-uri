@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -19,10 +18,6 @@ import Test.QuickCheck
 import Text.Megaparsec
 import Text.URI (RTextException (..), RTextLabel (..), URI (..))
 import qualified Text.URI as URI
-
-#if !MIN_VERSION_base(4,13,0)
-import Data.Semigroup ((<>))
-#endif
 
 instance Arbitrary Text where
   arbitrary = T.pack <$> arbitrary
