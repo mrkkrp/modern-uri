@@ -1,3 +1,7 @@
+## Modern URI 0.3.4.1
+
+* Works with GHC 9.0.1.
+
 ## Modern URI 0.3.4.0
 
 * URIs with authority component and without path are now rendered without
