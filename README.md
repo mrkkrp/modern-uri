@@ -4,7 +4,7 @@
 [![Hackage](https://img.shields.io/hackage/v/modern-uri.svg?style=flat)](https://hackage.haskell.org/package/modern-uri)
 [![Stackage Nightly](http://stackage.org/package/modern-uri/badge/nightly)](http://stackage.org/nightly/package/modern-uri)
 [![Stackage LTS](http://stackage.org/package/modern-uri/badge/lts)](http://stackage.org/lts/package/modern-uri)
-[![Build Status](https://travis-ci.org/mrkkrp/modern-uri.svg?branch=master)](https://travis-ci.org/mrkkrp/modern-uri)
+![CI](https://github.com/mrkkrp/modern-uri/workflows/CI/badge.svg?branch=master)
 
 This is a modern library for working with URIs in Haskell as per RFC 3986:
 
@@ -15,19 +15,18 @@ https://tools.ietf.org/html/rfc3986
 The `modern-uri` package features:
 
 * Correct by construction `URI` data type. The correctness is ensured by
-  making sure that every sub-component of the `URI` record is by itself
-  cannot be invalid. This boils down to careful use of types and a set of
-  smart constructors.
+  making sure that every sub-component of the `URI` record cannot be
+  invalid.
 * Textual components in the `URI` data type are represented as `Text` rather
   than `ByteString`, because they are percent-decoded and so they can
   contain characters outside of ASCII range (i.e. Unicode). This allows for
   easier manipulation of `URI`s, while encoding and decoding headaches are
   handled by the parsers and renders for you.
 * Absolute and relative URIs differ only by the scheme component: if it's
-  `Nothing`, then URI is relative, otherwise it's absolute.
-* Megaparsec parser that can be used as a standalone smart constructor for
-  the `URI` data type (see `mkURI`) as well as be seamlessly integrated into
-  a bigger Megaparsec parser that consumes strict `Text` (see `parser`) or
+  `Nothing`, then the URI is relative, otherwise it's absolute.
+* A Megaparsec parser that can be used as a standalone smart constructor for
+  the `URI` data type (see `mkURI`) as well as seamlessly integrated into a
+  bigger Megaparsec parser that consumes a strict `Text` (see `parser`) or
   strict `ByteString` (see `parserBs`).
 * The parser performs some normalization, for example it collapses
   consecutive slashes. Some smart constructors such as `mkScheme` and
@@ -68,15 +67,19 @@ it manually like so:
 λ> let uri = URI.URI (Just scheme) (Right (URI.Authority Nothing host Nothing)) Nothing [] Nothing
 λ> uri
 URI
-  { uriScheme = Just "https"
-  , uriAuthority = Right
-      (Authority
-        { authUserInfo = Nothing
-        , authHost = "markkarpov.com"
-        , authPort = Nothing })
-  , uriPath = Nothing
-  , uriQuery = []
-  , uriFragment = Nothing }
+  { uriScheme = Just "https",
+    uriAuthority =
+      Right
+        ( Authority
+            { authUserInfo = Nothing,
+              authHost = "markkarpov.com",
+              authPort = Nothing
+            }
+        ),
+    uriPath = Nothing,
+    uriQuery = [],
+    uriFragment = Nothing
+  }
 ```
 
 In this library we use quite a few refined text values. They only can be
@@ -84,7 +87,7 @@ constructed by using smart constructors like `mkScheme :: MonadThrow m =>
 Text -> m (RText 'Scheme)`. For example, if argument to `mkScheme` is not a
 valid scheme, an exception will be thrown. Note that monads such as `Maybe`
 are also instances of the `MonadThrow` type class, and so the smart
-constructors may be used in pure setting as well.
+constructors can be used in pure environment as well.
 
 There is a smart constructor that can make an entire `URI` too, it's called
 (unsurprisingly) `mkURI`:
@@ -93,15 +96,19 @@ There is a smart constructor that can make an entire `URI` too, it's called
 λ> uri <- URI.mkURI "https://markkarpov.com"
 λ> uri
 URI
-  { uriScheme = Just "https"
-  , uriAuthority = Right
-      (Authority
-        { authUserInfo = Nothing
-        , authHost = "markkarpov.com"
-        , authPort = Nothing })
-  , uriPath = Nothing
-  , uriQuery = []
-  , uriFragment = Nothing }
+  { uriScheme = Just "https",
+    uriAuthority =
+      Right
+        ( Authority
+            { authUserInfo = Nothing,
+              authHost = "markkarpov.com",
+              authPort = Nothing
+            }
+        ),
+    uriPath = Nothing,
+    uriQuery = [],
+    uriFragment = Nothing
+  }
 ```
 
 If the argument of `mkURI` is not a valid URI, then an exception will be
@@ -118,15 +125,19 @@ like so:
 λ> let uri = [QQ.uri|https://markkarpov.com|]
 λ> uri
 URI
-  { uriScheme = Just "https"
-  , uriAuthority = Right
-      (Authority
-        { authUserInfo = Nothing
-        , authHost = "markkarpov.com"
-        , authPort = Nothing })
-  , uriPath = Nothing
-  , uriQuery = []
-  , uriFragment = Nothing }
+  { uriScheme = Just "https",
+    uriAuthority =
+      Right
+        ( Authority
+            { authUserInfo = Nothing,
+              authHost = "markkarpov.com",
+              authPort = Nothing
+            }
+        ),
+    uriPath = Nothing,
+    uriQuery = [],
+    uriFragment = Nothing
+  }
 ```
 
 Note how the value returned by the `url` quasi quote is pure, its
@@ -135,7 +146,7 @@ quote it's a compilation error. The `Text.URI.QQ` module has quasi-quoters
 for scheme, host, and other components.
 
 Finally, the package provides two Megaparsec parsers: `parser` and
-`parserBs`. The first works on strict `Text`, while other one works on
+`parserBs`. The first works on strict `Text`, while the other one works on
 strict `ByteString`s. You can use the parsers in a bigger Megaparsec parser
 to parse `URI`s.
 

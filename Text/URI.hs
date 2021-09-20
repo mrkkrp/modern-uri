@@ -1,3 +1,7 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
+
 -- |
 -- Module      :  Text.URI
 -- Copyright   :  © 2017–present Mark Karpov
@@ -19,77 +23,73 @@
 -- See also "Text.URI.Lens" for lens, prisms, and traversals; see
 -- "Text.URI.QQ" for quasi-quoters for compile-time validation of URIs and
 -- refined text components.
-
-{-# LANGUAGE CPP               #-}
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections     #-}
-
 module Text.URI
   ( -- * Data types
-    URI (..)
-  , mkURI
-  , emptyURI
-  , makeAbsolute
-  , isPathAbsolute
-  , relativeTo
-  , Authority (..)
-  , UserInfo (..)
-  , QueryParam (..)
-  , ParseException (..)
+    URI (..),
+    mkURI,
+    mkURIBs,
+    emptyURI,
+    makeAbsolute,
+    isPathAbsolute,
+    relativeTo,
+    Authority (..),
+    UserInfo (..),
+    QueryParam (..),
+    ParseException (..),
+    ParseExceptionBs (..),
+
     -- * Refined text
     -- $rtext
-  , RText
-  , RTextLabel (..)
-  , mkScheme
-  , mkHost
-  , mkUsername
-  , mkPassword
-  , mkPathPiece
-  , mkQueryKey
-  , mkQueryValue
-  , mkFragment
-  , unRText
-  , RTextException (..)
+    RText,
+    RTextLabel (..),
+    mkScheme,
+    mkHost,
+    mkUsername,
+    mkPassword,
+    mkPathPiece,
+    mkQueryKey,
+    mkQueryValue,
+    mkFragment,
+    unRText,
+    RTextException (..),
+
     -- * Parsing
     -- $parsing
-  , parser
-  , parserBs
+    parser,
+    parserBs,
+
     -- * Rendering
     -- $rendering
-  , render
-  , render'
-  , renderBs
-  , renderBs'
-  , renderStr
-  , renderStr' )
+    render,
+    render',
+    renderBs,
+    renderBs',
+    renderStr,
+    renderStr',
+  )
 where
 
 import Data.Either (isLeft)
 import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.List.NonEmpty as NE
 import Data.Maybe (isJust, isNothing)
 import Text.URI.Parser.ByteString
 import Text.URI.Parser.Text
 import Text.URI.Render
 import Text.URI.Types
-import qualified Data.List.NonEmpty as NE
-
-#if !MIN_VERSION_base(4,13,0)
-import Data.Semigroup ((<>))
-#endif
 
 -- | The empty 'URI'.
 --
 -- @since 0.2.1.0
-
 emptyURI :: URI
-emptyURI = URI
-  { uriScheme    = Nothing
-  , uriAuthority = Left False
-  , uriPath      = Nothing
-  , uriQuery     = []
-  , uriFragment  = Nothing
-  }
+emptyURI =
+  URI
+    { uriScheme = Nothing,
+      uriAuthority = Left False,
+      uriPath = Nothing,
+      uriQuery = [],
+      uriFragment = Nothing
+    }
 
 -- $rtext
 --
@@ -126,57 +126,60 @@ emptyURI = URI
 -- See also: <https://tools.ietf.org/html/rfc3986#section-5.2>.
 --
 -- @since 0.2.0.0
-
-relativeTo
-  :: URI               -- ^ Reference 'URI' to make absolute
-  -> URI               -- ^ Base 'URI'
-  -> Maybe URI         -- ^ The target 'URI'
+relativeTo ::
+  -- | Reference 'URI' to make absolute
+  URI ->
+  -- | Base 'URI'
+  URI ->
+  -- | The target 'URI'
+  Maybe URI
 relativeTo r base =
   case uriScheme base of
     Nothing -> Nothing
-    Just bscheme -> Just $
-      if isJust (uriScheme r)
-        then r { uriPath = uriPath r >>= removeDotSegments }
-        else r
-          { uriScheme    = Just bscheme
-          , uriAuthority =
-              case uriAuthority r of
-                Right auth -> Right auth
-                Left  rabs ->
-                  case uriAuthority base of
-                    Right auth -> Right auth
-                    Left  babs -> Left (babs || rabs)
-          , uriPath      = (>>= removeDotSegments) $
-              if isPathAbsolute r
-                then uriPath r
-                else case (uriPath base, uriPath r) of
-                  (Nothing, Nothing) -> Nothing
-                  (Just b', Nothing) -> Just b'
-                  (Nothing, Just r') -> Just r'
-                  (Just (bt, bps), Just (rt, rps)) ->
-                    fmap (rt,) . NE.nonEmpty $
-                      (if bt then NE.toList bps else NE.init bps) <>
-                      NE.toList rps
-          , uriQuery     =
-              if isLeft (uriAuthority r) &&
-                 isNothing (uriPath r)   &&
-                 null (uriQuery r)
-                then uriQuery base
-                else uriQuery r
-          }
+    Just bscheme ->
+      Just $
+        if isJust (uriScheme r)
+          then r {uriPath = uriPath r >>= removeDotSegments}
+          else
+            r
+              { uriScheme = Just bscheme,
+                uriAuthority = case uriAuthority r of
+                  Right auth -> Right auth
+                  Left rabs ->
+                    case uriAuthority base of
+                      Right auth -> Right auth
+                      Left babs -> Left (babs || rabs),
+                uriPath =
+                  (>>= removeDotSegments) $
+                    if isPathAbsolute r
+                      then uriPath r
+                      else case (uriPath base, uriPath r) of
+                        (Nothing, Nothing) -> Nothing
+                        (Just b', Nothing) -> Just b'
+                        (Nothing, Just r') -> Just r'
+                        (Just (bt, bps), Just (rt, rps)) ->
+                          fmap (rt,) . NE.nonEmpty $
+                            (if bt then NE.toList bps else NE.init bps)
+                              <> NE.toList rps,
+                uriQuery =
+                  if isLeft (uriAuthority r)
+                    && isNothing (uriPath r)
+                    && null (uriQuery r)
+                    then uriQuery base
+                    else uriQuery r
+              }
 
 ----------------------------------------------------------------------------
 -- Helpers
 
 -- | Remove dot segments from a path.
-
-removeDotSegments
-  :: (Bool, NonEmpty (RText 'PathPiece))
-  -> Maybe (Bool, NonEmpty (RText 'PathPiece))
+removeDotSegments ::
+  (Bool, NonEmpty (RText 'PathPiece)) ->
+  Maybe (Bool, NonEmpty (RText 'PathPiece))
 removeDotSegments (trailSlash, path) = go [] (NE.toList path) trailSlash
   where
-    go out []     ts = (fmap (ts,) . NE.nonEmpty . reverse) out
-    go out (x:xs) ts
-      | unRText x == "."  = go out          xs (null xs || ts)
+    go out [] ts = (fmap (ts,) . NE.nonEmpty . reverse) out
+    go out (x : xs) ts
+      | unRText x == "." = go out xs (null xs || ts)
       | unRText x == ".." = go (drop 1 out) xs (null xs || ts)
-      | otherwise         = go (x:out)      xs ts
+      | otherwise = go (x : out) xs ts

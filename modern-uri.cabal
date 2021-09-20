@@ -1,113 +1,132 @@
-name:                 modern-uri
-version:              0.3.2.0
-cabal-version:        1.18
-tested-with:          GHC==8.4.4, GHC==8.6.5, GHC==8.8.3
-license:              BSD3
-license-file:         LICENSE.md
-author:               Mark Karpov <markkarpov92@gmail.com>
-maintainer:           Mark Karpov <markkarpov92@gmail.com>
-homepage:             https://github.com/mrkkrp/modern-uri
-bug-reports:          https://github.com/mrkkrp/modern-uri/issues
-category:             Text
-synopsis:             Modern library for working with URIs
-build-type:           Simple
-description:          Modern library for working with URIs.
-extra-doc-files:      CHANGELOG.md
-                    , README.md
+cabal-version:   1.18
+name:            modern-uri
+version:         0.3.4.1
+license:         BSD3
+license-file:    LICENSE.md
+maintainer:      Mark Karpov <markkarpov92@gmail.com>
+author:          Mark Karpov <markkarpov92@gmail.com>
+tested-with:     ghc ==8.8.4 ghc ==8.10.5 ghc ==9.0.1
+homepage:        https://github.com/mrkkrp/modern-uri
+bug-reports:     https://github.com/mrkkrp/modern-uri/issues
+synopsis:        Modern library for working with URIs
+description:     Modern library for working with URIs.
+category:        Text
+build-type:      Simple
+extra-doc-files:
+    CHANGELOG.md
+    README.md
 
 source-repository head
-  type:               git
-  location:           https://github.com/mrkkrp/modern-uri.git
+    type:     git
+    location: https://github.com/mrkkrp/modern-uri.git
 
 flag dev
-  description:        Turn on development settings.
-  manual:             True
-  default:            False
+    description: Turn on development settings.
+    default:     False
+    manual:      True
 
 library
-  build-depends:      QuickCheck       >= 2.4 && < 3.0
-                    , base             >= 4.11 && < 5.0
-                    , bytestring       >= 0.2 && < 0.11
-                    , containers       >= 0.5 && < 0.7
-                    , contravariant    >= 1.3 && < 2.0
-                    , deepseq          >= 1.3 && < 1.5
-                    , exceptions       >= 0.6 && < 0.11
-                    , megaparsec       >= 7.0 && < 9.0
-                    , mtl              >= 2.0 && < 3.0
-                    , profunctors      >= 5.2.1 && < 6.0
-                    , reflection       >= 2.0 && < 3.0
-                    , tagged           >= 0.8 && < 0.9
-                    , template-haskell >= 2.10 && < 2.16
-                    , text             >= 0.2 && < 1.3
-  exposed-modules:    Text.URI
-                    , Text.URI.Lens
-                    , Text.URI.QQ
-  other-modules:      Text.URI.Parser.ByteString
-                    , Text.URI.Parser.Text
-                    , Text.URI.Parser.Text.Utils
-                    , Text.URI.Render
-                    , Text.URI.Types
-  if flag(dev)
-    ghc-options:      -Wall -Werror
-  else
-    ghc-options:      -O2 -Wall
-  if flag(dev)
-    ghc-options:      -Wcompat
-                      -Wincomplete-record-updates
-                      -Wincomplete-uni-patterns
-                      -Wnoncanonical-monad-instances
-  default-language:   Haskell2010
+    exposed-modules:
+        Text.URI
+        Text.URI.Lens
+        Text.URI.QQ
+
+    other-modules:
+        Text.URI.Parser.ByteString
+        Text.URI.Parser.Text
+        Text.URI.Parser.Text.Utils
+        Text.URI.Render
+        Text.URI.Types
+
+    default-language: Haskell2010
+    build-depends:
+        QuickCheck >=2.4 && <3.0,
+        base >=4.13 && <5.0,
+        bytestring >=0.2 && <0.12,
+        containers >=0.5 && <0.7,
+        contravariant >=1.3 && <2.0,
+        deepseq >=1.3 && <1.5,
+        exceptions >=0.6 && <0.11,
+        megaparsec >=7.0 && <10.0,
+        mtl >=2.0 && <3.0,
+        profunctors >=5.2.1 && <6.0,
+        reflection >=2.0 && <3.0,
+        tagged >=0.8 && <0.9,
+        template-haskell >=2.10 && <2.18,
+        text >=0.2 && <1.3
+
+    if flag(dev)
+        ghc-options: -Wall -Werror
+
+    else
+        ghc-options: -O2 -Wall
+
+    if flag(dev)
+        ghc-options:
+            -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
+            -Wnoncanonical-monad-instances
 
 test-suite tests
-  main-is:            Spec.hs
-  hs-source-dirs:     tests
-  type:               exitcode-stdio-1.0
-  build-depends:      QuickCheck       >= 2.4 && < 3.0
-                    , base             >= 4.11 && < 5.0
-                    , bytestring       >= 0.2 && < 0.11
-                    , hspec            >= 2.0 && < 3.0
-                    , hspec-megaparsec >= 2.0 && < 3.0
-                    , megaparsec       >= 7.0 && < 9.0
-                    , modern-uri
-                    , text             >= 0.2 && < 1.3
-  build-tools:        hspec-discover   >= 2.0 && < 3.0
-  other-modules:      Text.QQSpec
-                    , Text.URISpec
-  if flag(dev)
-    ghc-options:      -Wall -Werror
-  else
-    ghc-options:      -O2 -Wall
-  default-language:   Haskell2010
+    type:             exitcode-stdio-1.0
+    main-is:          Spec.hs
+    build-tools:      hspec-discover >=2.0 && <3.0
+    hs-source-dirs:   tests
+    other-modules:
+        Text.QQSpec
+        Text.URISpec
+
+    default-language: Haskell2010
+    build-depends:
+        QuickCheck >=2.4 && <3.0,
+        base >=4.13 && <5.0,
+        bytestring >=0.2 && <0.12,
+        hspec >=2.0 && <3.0,
+        hspec-megaparsec >=2.0 && <3.0,
+        megaparsec >=7.0 && <10.0,
+        modern-uri,
+        text >=0.2 && <1.3
+
+    if flag(dev)
+        ghc-options: -Wall -Werror
+
+    else
+        ghc-options: -O2 -Wall
 
 benchmark bench-speed
-  main-is:            Main.hs
-  hs-source-dirs:     bench/speed
-  type:               exitcode-stdio-1.0
-  build-depends:      base             >= 4.11 && < 5.0
-                    , bytestring       >= 0.2 && < 0.11
-                    , criterion        >= 0.6.2.1 && < 1.6
-                    , megaparsec       >= 7.0 && < 9.0
-                    , modern-uri
-                    , text             >= 0.2  && < 1.3
-  if flag(dev)
-    ghc-options:      -O2 -Wall -Werror
-  else
-    ghc-options:      -O2 -Wall
-  default-language:   Haskell2010
+    type:             exitcode-stdio-1.0
+    main-is:          Main.hs
+    hs-source-dirs:   bench/speed
+    default-language: Haskell2010
+    build-depends:
+        base >=4.13 && <5.0,
+        bytestring >=0.2 && <0.12,
+        criterion >=0.6.2.1 && <1.6,
+        megaparsec >=7.0 && <10.0,
+        modern-uri,
+        text >=0.2 && <1.3
+
+    if flag(dev)
+        ghc-options: -O2 -Wall -Werror
+
+    else
+        ghc-options: -O2 -Wall
 
 benchmark bench-memory
-  main-is:            Main.hs
-  hs-source-dirs:     bench/memory
-  type:               exitcode-stdio-1.0
-  build-depends:      base             >= 4.11 && < 5.0
-                    , bytestring       >= 0.2 && < 0.11
-                    , deepseq          >= 1.3 && < 1.5
-                    , megaparsec       >= 7.0 && < 9.0
-                    , modern-uri
-                    , text             >= 0.2  && < 1.3
-                    , weigh            >= 0.0.4
-  if flag(dev)
-    ghc-options:      -O2 -Wall -Werror
-  else
-    ghc-options:      -O2 -Wall
-  default-language:   Haskell2010
+    type:             exitcode-stdio-1.0
+    main-is:          Main.hs
+    hs-source-dirs:   bench/memory
+    default-language: Haskell2010
+    build-depends:
+        base >=4.13 && <5.0,
+        bytestring >=0.2 && <0.12,
+        deepseq >=1.3 && <1.5,
+        megaparsec >=7.0 && <10.0,
+        modern-uri,
+        text >=0.2 && <1.3,
+        weigh >=0.0.4
+
+    if flag(dev)
+        ghc-options: -O2 -Wall -Werror
+
+    else
+        ghc-options: -O2 -Wall

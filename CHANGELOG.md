@@ -1,3 +1,20 @@
+## Modern URI 0.3.4.1
+
+* Works with GHC 9.0.1.
+
+## Modern URI 0.3.4.0
+
+* URIs with authority component and without path are now rendered without
+  trailing slashes.
+
+## Modern URI 0.3.3.1
+
+* Works with `bytestring-0.11`.
+
+## Modern URI 0.3.3.0
+
+* Added `mkURIBs` for parsing `ByteString` as a `URI`.
+
 ## Modern URI 0.3.2.0
 
 * Quasi-quoters from `Text.URI.QQ` now can be used in pattern context when

@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 -- |
 -- Module      :  Text.URI.Parser.Text.Utils
 -- Copyright   :  © 2017–present Mark Karpov
@@ -8,47 +11,48 @@
 -- Portability :  portable
 --
 -- Random utilities for our 'Text' parsers.
-
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module Text.URI.Parser.Text.Utils
-  ( pHost
-  , asciiAlphaChar
-  , asciiAlphaNumChar
-  , unreservedChar
-  , percentEncChar
-  , subDelimChar
-  , pchar
-  , pchar' )
+  ( pHost,
+    asciiAlphaChar,
+    asciiAlphaNumChar,
+    unreservedChar,
+    percentEncChar,
+    subDelimChar,
+    pchar,
+    pchar',
+  )
 where
 
 import Control.Monad
 import Data.Char
 import Data.List (intercalate)
+import qualified Data.List.NonEmpty as NE
 import Data.Maybe (maybeToList)
+import qualified Data.Set as E
 import Data.Text (Text)
+import qualified Data.Text as T
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import qualified Data.List.NonEmpty         as NE
-import qualified Data.Set                   as E
-import qualified Data.Text                  as T
 import qualified Text.Megaparsec.Char.Lexer as L
 
 -- | Parser that can parse host names.
-
-pHost :: MonadParsec e Text m
-  => Bool              -- ^ Demand percent-encoding in reg names
-  -> m String
-pHost pe = choice
-  [ try (asConsumed ipLiteral)
-  , try (asConsumed ipv4Address)
-  , regName ]
+pHost ::
+  MonadParsec e Text m =>
+  -- | Demand percent-encoding in reg names
+  Bool ->
+  m String
+pHost pe =
+  choice
+    [ try (asConsumed ipLiteral),
+      try (asConsumed ipv4Address),
+      regName
+    ]
   where
     asConsumed :: MonadParsec e Text m => m a -> m String
     asConsumed p = T.unpack . fst <$> match p
-    ipLiteral = between (char '[') (char ']') $
-      try ipv6Address <|> ipvFuture
+    ipLiteral =
+      between (char '[') (char ']') $
+        try ipv6Address <|> ipvFuture
     octet = do
       o <- getOffset
       (toks, x) <- match L.decimal
@@ -60,20 +64,20 @@ pHost pe = choice
     ipv4Address =
       count 3 (octet <* char '.') *> octet
     ipv6Address = do
-      pos        <- getOffset
+      pos <- getOffset
       (toks, xs) <- match $ do
         xs' <- maybeToList <$> optional ([] <$ string "::")
-        xs  <- flip sepBy1 (char ':') $ do
+        xs <- flip sepBy1 (char ':') $ do
           (skip, hasMore) <- lookAhead . hidden $ do
-            skip    <- option False (True <$ char ':')
+            skip <- option False (True <$ char ':')
             hasMore <- option False (True <$ hexDigitChar)
             return (skip, hasMore)
           case (skip, hasMore) of
-            (True,  True)  -> return []
-            (True,  False) -> [] <$ char ':'
-            (False, _)     -> count' 1 4 hexDigitChar
+            (True, True) -> return []
+            (True, False) -> [] <$ char ':'
+            (False, _) -> count' 1 4 hexDigitChar
         return (xs' ++ xs)
-      let nskips  = length (filter null xs)
+      let nskips = length (filter null xs)
           npieces = length xs
       unless (nskips < 2 && (npieces == 8 || (nskips == 1 && npieces < 8))) $ do
         setOffset pos
@@ -94,33 +98,31 @@ pHost pe = choice
       case mx of
         Nothing -> return ""
         Just x -> do
-          let r = ch <|> try
-                (char '-' <* (lookAhead . try) (ch <|> char '-'))
+          let r =
+                ch
+                  <|> try
+                    (char '-' <* (lookAhead . try) (ch <|> char '-'))
           xs <- many r
-          return (x:xs)
+          return (x : xs)
 {-# INLINEABLE pHost #-}
 
 -- | Parse an ASCII alpha character.
-
 asciiAlphaChar :: MonadParsec e Text m => m Char
 asciiAlphaChar = satisfy isAsciiAlpha <?> "ASCII alpha character"
 {-# INLINE asciiAlphaChar #-}
 
 -- | Parse an ASCII alpha-numeric character.
-
 asciiAlphaNumChar :: MonadParsec e Text m => m Char
 asciiAlphaNumChar = satisfy isAsciiAlphaNum <?> "ASCII alpha-numeric character"
 {-# INLINE asciiAlphaNumChar #-}
 
 -- | Parse an unreserved character.
-
 unreservedChar :: MonadParsec e Text m => m Char
 unreservedChar = label "unreserved character" . satisfy $ \x ->
   isAsciiAlphaNum x || x == '-' || x == '.' || x == '_' || x == '~'
 {-# INLINE unreservedChar #-}
 
 -- | Parse a percent-encoded character.
-
 percentEncChar :: MonadParsec e Text m => m Char
 percentEncChar = do
   void (char '%')
@@ -130,7 +132,6 @@ percentEncChar = do
 {-# INLINE percentEncChar #-}
 
 -- | Parse a sub-delimiter character.
-
 subDelimChar :: MonadParsec e Text m => m Char
 subDelimChar = oneOf s <?> "sub-delimiter"
   where
@@ -138,26 +139,28 @@ subDelimChar = oneOf s <?> "sub-delimiter"
 {-# INLINE subDelimChar #-}
 
 -- | PCHAR thing from the spec.
-
 pchar :: MonadParsec e Text m => m Char
-pchar = choice
-  [ unreservedChar
-  , percentEncChar
-  , subDelimChar
-  , char ':'
-  , char '@' ]
+pchar =
+  choice
+    [ unreservedChar,
+      percentEncChar,
+      subDelimChar,
+      char ':',
+      char '@'
+    ]
 {-# INLINE pchar #-}
 
 -- | 'pchar' adjusted for query parsing.
-
 pchar' :: MonadParsec e Text m => m Char
-pchar' = choice
-  [ unreservedChar
-  , percentEncChar
-  , char '+' >> pure ' '
-  , oneOf s <?> "sub-delimiter"
-  , char ':'
-  , char '@' ]
+pchar' =
+  choice
+    [ unreservedChar,
+      percentEncChar,
+      char '+' >> pure ' ',
+      oneOf s <?> "sub-delimiter",
+      char ':',
+      char '@'
+    ]
   where
     s = E.fromList "!$'()*,;"
 {-# INLINE pchar' #-}
