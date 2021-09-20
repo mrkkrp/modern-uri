@@ -33,6 +33,7 @@ import Text.URI.Parser.Text.Utils
 import Text.URI.Types
 import qualified Data.ByteString.Char8      as B8
 import qualified Data.List.NonEmpty         as NE
+import qualified Data.Set                   as S
 import qualified Data.Text.Encoding         as TE
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -148,5 +149,6 @@ liftR :: MonadParsec e s m
   => (forall n. MonadThrow n => Text -> n r)
   -> String
   -> m r
-liftR f = maybe empty return . f . TE.decodeUtf8 . B8.pack
+liftR f = either throwError (maybe empty return . f) . TE.decodeUtf8' . B8.pack
+  where throwError = fancyFailure . S.singleton . ErrorFail . show
 {-# INLINE liftR #-}
