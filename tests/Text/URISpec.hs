@@ -248,6 +248,20 @@ spec = do
       uri <- mkTestURI
       let s = "https://mark%3a%40:secret:%40@github.com:443/mrkkrp/modern-uri+%3a@?&foo:@=bar+:@#fragment:@"
       parse urip "" s `shouldParse` uri
+    it "treats gracefully percent-encoded sequences that are not UTF-8 encoded Text" $ do
+      let s = "https://foo%f0bar"
+      parse urip "" s
+        `shouldFailWith` err
+          8
+          ( mconcat
+              [ utoks "foo%f0bar",
+                etok '%',
+                etok '-',
+                etok '.',
+                elabel "ASCII alpha-numeric character",
+                elabel "host that can be decoded as UTF-8"
+              ]
+          )
   describe "render" $ do
     it "sort of works" $
       fmap URI.render mkTestURI `shouldReturn` testURI

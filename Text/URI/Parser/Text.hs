@@ -27,7 +27,9 @@ import qualified Data.ByteString.Char8 as B8
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe (catMaybes, isJust)
+import qualified Data.Set as S
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Void
 import Text.Megaparsec
@@ -65,17 +67,19 @@ parser = do
 
 pScheme :: MonadParsec e Text m => m (RText 'Scheme)
 pScheme = do
-  x <- asciiAlphaChar
-  xs <- many (asciiAlphaNumChar <|> char '+' <|> char '-' <|> char '.')
+  r <- liftR "scheme" mkScheme $ do
+    x <- asciiAlphaChar
+    xs <- many (asciiAlphaNumChar <|> char '+' <|> char '-' <|> char '.')
+    return (x : xs)
   void (char ':')
-  liftR mkScheme (x : xs)
+  return r
 {-# INLINE pScheme #-}
 
 pAuthority :: MonadParsec e Text m => m Authority
 pAuthority = do
   void (string "//")
   authUserInfo <- optional pUserInfo
-  authHost <- pHost True >>= liftR mkHost
+  authHost <- liftR "host" mkHost (pHost True)
   authPort <- optional (char ':' *> L.decimal)
   return Authority {..}
 {-# INLINE pAuthority #-}
@@ -83,13 +87,18 @@ pAuthority = do
 pUserInfo :: MonadParsec e Text m => m UserInfo
 pUserInfo = try $ do
   uiUsername <-
-    label "username" $
-      many (unreservedChar <|> percentEncChar <|> subDelimChar)
-        >>= liftR mkUsername
+    liftR
+      "username"
+      mkUsername
+      ( label "username" $
+          many (unreservedChar <|> percentEncChar <|> subDelimChar)
+      )
   uiPassword <- optional $ do
     void (char ':')
-    many (unreservedChar <|> percentEncChar <|> subDelimChar <|> char ':')
-      >>= liftR mkPassword
+    liftR
+      "password"
+      mkPassword
+      (many (unreservedChar <|> percentEncChar <|> subDelimChar <|> char ':'))
   void (char '@')
   return UserInfo {..}
 {-# INLINE pUserInfo #-}
@@ -103,12 +112,18 @@ pPath hasAuth = do
   when (doubleSlash && not hasAuth) $
     (unexpected . Tokens . NE.fromList) "//"
   absPath <- option False (True <$ char '/')
-  (rawPieces, trailingSlash) <- flip runStateT False $
-    flip sepBy (char '/') . label "path piece" $ do
-      x <- many pchar
-      put (null x)
-      return x
-  pieces <- mapM (liftR mkPathPiece) (filter (not . null) rawPieces)
+  let mkPathPiece' x =
+        if T.null x
+          then Just Nothing
+          else Just <$> mkPathPiece x
+  (maybePieces, trailingSlash) <- flip runStateT False $
+    flip sepBy (char '/') $
+      liftR "path piece" mkPathPiece' $
+        label "path piece" $ do
+          x <- many pchar
+          put (null x)
+          return x
+  let pieces = catMaybes maybePieces
   return
     ( absPath,
       case NE.nonEmpty pieces of
@@ -123,33 +138,56 @@ pQuery = do
   void (optional (char '&'))
   fmap catMaybes . flip sepBy (char '&') . label "query parameter" $ do
     let p = many (pchar' <|> char '/' <|> char '?')
-    k' <- p
-    mv <- optional (char '=' *> p)
-    k <- liftR mkQueryKey k'
-    if null k'
-      then return Nothing
-      else
-        Just <$> case mv of
-          Nothing -> return (QueryFlag k)
-          Just v -> QueryParam k <$> liftR mkQueryValue v
+    k <- liftR "query key" mkQueryKey p
+    mv <- optional (char '=' *> liftR "query value" mkQueryValue p)
+    return $
+      if T.null (unRText k)
+        then Nothing
+        else
+          Just
+            ( case mv of
+                Nothing -> QueryFlag k
+                Just v -> QueryParam k v
+            )
 {-# INLINE pQuery #-}
 
 pFragment :: MonadParsec e Text m => m (RText 'Fragment)
 pFragment = do
   void (char '#')
-  xs <-
-    many . label "fragment character" $
-      pchar <|> char '/' <|> char '?'
-  liftR mkFragment xs
+  liftR
+    "fragment"
+    mkFragment
+    ( many . label "fragment character" $
+        pchar <|> char '/' <|> char '?'
+    )
 {-# INLINE pFragment #-}
 
 ----------------------------------------------------------------------------
 -- Helpers
 
+-- | Lift a smart constructor that consumes 'Text' into a parser.
 liftR ::
-  MonadParsec e s m =>
-  (forall n. MonadThrow n => Text -> n r) ->
+  MonadParsec e Text m =>
+  -- | What is being parsed
   String ->
+  -- | The smart constructor that produces the result
+  (Text -> Maybe r) ->
+  -- | How to parse 'String' that will be converted to 'Text' and fed to
+  -- the smart constructor
+  m String ->
   m r
-liftR f = maybe empty return . f . TE.decodeUtf8 . B8.pack
+liftR lbl f p = do
+  o <- getOffset
+  (toks, s) <- match p
+  case TE.decodeUtf8' (B8.pack s) of
+    Left _ -> do
+      let unexp = NE.fromList (T.unpack toks)
+          expecting = NE.fromList (lbl ++ " that can be decoded as UTF-8")
+      parseError
+        ( TrivialError
+            o
+            (Just (Tokens unexp))
+            (S.singleton (Label expecting))
+        )
+    Right text -> maybe empty return (f text)
 {-# INLINE liftR #-}

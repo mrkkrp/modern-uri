@@ -1,3 +1,9 @@
+## Modern URI 0.3.4.2
+
+* Improved handling of percent-encoded sequences of bytes that cannot be
+  decoded as UTF-8 text. Now friendly error messages are reported in these
+  cases.
+
 ## Modern URI 0.3.4.1
 
 * Works with GHC 9.0.1.
