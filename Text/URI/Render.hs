@@ -289,7 +289,7 @@ instance RLabel 'Password where
 
 instance RLabel 'PathPiece where
   needsNoEscaping Proxy x =
-    isUnreserved x || isDelim x || x == 64
+    isUnreserved x
 
 instance RLabel 'QueryKey where
   needsNoEscaping Proxy x =
