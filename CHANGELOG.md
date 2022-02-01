@@ -1,3 +1,7 @@
+## Modern URI 0.3.4.3
+
+* Percent encode delimiter characters that appear in a path component.
+
 ## Modern URI 0.3.4.2
 
 * Improved handling of percent-encoded sequences of bytes that cannot be
