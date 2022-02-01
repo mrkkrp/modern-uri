@@ -1,6 +1,6 @@
 cabal-version:   2.4
 name:            modern-uri
-version:         0.3.4.2
+version:         0.3.4.3
 license:         BSD-3-Clause
 license-file:    LICENSE.md
 maintainer:      Mark Karpov <markkarpov92@gmail.com>
@@ -67,15 +67,15 @@ library
             -Wnoncanonical-monad-instances
 
 test-suite tests
-    type:             exitcode-stdio-1.0
-    main-is:          Spec.hs
-    build-tools:      hspec-discover >=2.0 && <3.0
-    hs-source-dirs:   tests
+    type:               exitcode-stdio-1.0
+    main-is:            Spec.hs
+    build-tool-depends: hspec-discover:hspec-discover >=2.0 && <3.0
+    hs-source-dirs:     tests
     other-modules:
         Text.QQSpec
         Text.URISpec
 
-    default-language: Haskell2010
+    default-language:   Haskell2010
     build-depends:
         QuickCheck >=2.4 && <3.0,
         base >=4.13 && <5.0,

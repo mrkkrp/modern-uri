@@ -1,4 +1,4 @@
-## Unreleased
+## Modern URI 0.3.4.3
 
 * Percent encode delimiter characters and `@` that appear in a path
   component. [PR 47](https://github.com/mrkkrp/modern-uri/pull/47).
