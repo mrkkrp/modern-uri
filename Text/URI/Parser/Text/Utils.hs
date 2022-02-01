@@ -33,7 +33,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
 
 -- | Parser that can parse host names.
 pHost ::
@@ -44,7 +43,6 @@ pHost ::
 pHost pe =
   choice
     [ try (asConsumed ipLiteral),
-      try (asConsumed ipv4Address),
       regName
     ]
   where
@@ -53,16 +51,6 @@ pHost pe =
     ipLiteral =
       between (char '[') (char ']') $
         try ipv6Address <|> ipvFuture
-    octet = do
-      o <- getOffset
-      (toks, x) <- match L.decimal
-      when (x >= (256 :: Integer)) $ do
-        setOffset o
-        failure
-          (fmap Tokens . NE.nonEmpty . T.unpack $ toks)
-          (E.singleton . Label . NE.fromList $ "decimal number from 0 to 255")
-    ipv4Address =
-      count 3 (octet <* char '.') *> octet
     ipv6Address = do
       pos <- getOffset
       (toks, xs) <- match $ do

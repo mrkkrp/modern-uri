@@ -1,7 +1,10 @@
 ## Unreleased
 
 * Percent encode delimiter characters and `@` that appear in a path
-  component.
+  component. [PR 47](https://github.com/mrkkrp/modern-uri/pull/47).
+
+* Sub-domains that look like IPv4 can now be parsed. [Issue
+  46](https://github.com/mrkkrp/modern-uri/issues/46).
 
 ## Modern URI 0.3.4.2
 

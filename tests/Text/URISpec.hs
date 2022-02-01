@@ -119,6 +119,7 @@ spec = do
       URI.mkHost "LOCALHOST" `shouldRText` "localhost"
       URI.mkHost "github.com" `shouldRText` "github.com"
       URI.mkHost "foo.example.com" `shouldRText` "foo.example.com"
+      URI.mkHost "104.155.144.4.sslip.io" `shouldRText` "104.155.144.4.sslip.io"
       URI.mkHost "юникод.рф" `shouldRText` "юникод.рф"
       URI.mkHost "" `shouldRText` ""
     it "rejects invalid hosts" $ do
@@ -204,7 +205,6 @@ spec = do
                 etok '?',
                 etok '[',
                 elabel "ASCII alpha-numeric character",
-                elabel "integer",
                 elabel "username",
                 elabel "path piece",
                 eeof
@@ -224,6 +224,24 @@ spec = do
                 eeof
               ]
           )
+    it "parses URIs with sub-domains that look like IPv4" $ do
+      scheme <- URI.mkScheme "https"
+      host <- URI.mkHost "104.155.144.4.sslip.io"
+      let s = "https://104.155.144.4.sslip.io:443/"
+      parse urip "" s
+        `shouldParse` URI
+          { uriScheme = Just scheme,
+            uriAuthority =
+              Right
+                URI.Authority
+                  { URI.authUserInfo = Nothing,
+                    URI.authHost = host,
+                    URI.authPort = Just 443
+                  },
+            uriPath = Nothing,
+            uriQuery = [],
+            uriFragment = Nothing
+          }
     it "parses URIs with empty authority" $ do
       scheme <- URI.mkScheme "file"
       ppetc <- URI.mkPathPiece "etc"
