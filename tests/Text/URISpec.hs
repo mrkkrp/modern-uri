@@ -305,6 +305,11 @@ spec = do
         let uriWithoutSlash = "https://example.com"
         uri <- URI.mkURI uriWithoutSlash
         URI.render uri `shouldBe` uriWithoutSlash
+    context "when the scheme is mailto" $
+      it "does not escape @ in the path" $ do
+        let mailtoUri = "mailto:john.smith@example.org"
+        uri <- URI.mkURI mailtoUri
+        URI.render uri `shouldBe` mailtoUri
   describe "renderBs" $
     it "sort of works" $
       fmap URI.renderBs mkTestURI `shouldReturn` testURI
