@@ -1,3 +1,8 @@
+## Modern URI 0.3.4.4
+
+* The `mailto` scheme does not escape `@` in its paths (fixes the regression
+  introduced in 0.3.4.3).
+
 ## Modern URI 0.3.4.3
 
 * Percent encode delimiter characters and `@` that appear in a path

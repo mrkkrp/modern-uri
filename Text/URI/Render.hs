@@ -65,7 +65,7 @@ render' :: URI -> TLB.Builder
 render' x =
   equip
     TLB.decimal
-    (TLB.fromText . percentEncode)
+    (TLB.fromText . percentEncode (uriScheme x))
     (genericRender x)
 
 -- | Render a given 'URI' value as a strict 'ByteString'.
@@ -77,7 +77,7 @@ renderBs' :: URI -> BB.Builder
 renderBs' x =
   equip
     BB.wordDec
-    (BB.byteString . TE.encodeUtf8 . percentEncode)
+    (BB.byteString . TE.encodeUtf8 . percentEncode (uriScheme x))
     (genericRender x)
 
 -- | Render a given 'URI' value as a 'String'.
@@ -94,7 +94,7 @@ renderStr' x =
   toShowS $
     equip
       (DString . showInt)
-      (fromString . T.unpack . percentEncode)
+      (fromString . T.unpack . percentEncode (uriScheme x))
       (genericRender x)
 
 ----------------------------------------------------------------------------
@@ -230,11 +230,13 @@ instance IsString DString where
 percentEncode ::
   forall l.
   RLabel l =>
+  -- | Scheme of the URI
+  Maybe (RText 'Scheme) ->
   -- | Input text to encode
   RText l ->
   -- | Percent-encoded text
   Text
-percentEncode rtxt =
+percentEncode mscheme rtxt =
   if skipEscaping (Proxy :: Proxy l) txt
     then txt
     else T.unfoldr f (TE.encodeUtf8 txt, [])
@@ -254,7 +256,7 @@ percentEncode rtxt =
     encodeByte x = '%' :| [intToDigit h, intToDigit l]
       where
         (h, l) = fromIntegral x `quotRem` 16
-    nne = needsNoEscaping (Proxy :: Proxy l)
+    nne = needsNoEscaping (Proxy :: Proxy l) mscheme
     sap = spaceAsPlus (Proxy :: Proxy l)
     txt = unRText rtxt
 {-# INLINE percentEncode #-}
@@ -264,7 +266,7 @@ percentEncode rtxt =
 class RLabel (l :: RTextLabel) where
   -- | The predicate selects bytes that are not to be percent-escaped in
   -- rendered URI.
-  needsNoEscaping :: Proxy l -> Word8 -> Bool
+  needsNoEscaping :: Proxy l -> Maybe (RText 'Scheme) -> Word8 -> Bool
 
   -- | Whether to serialize space as the plus sign.
   spaceAsPlus :: Proxy l -> Bool
@@ -275,34 +277,41 @@ class RLabel (l :: RTextLabel) where
   skipEscaping Proxy _ = False
 
 instance RLabel 'Scheme where
-  needsNoEscaping Proxy x = isAlphaNum x || x == 43 || x == 45 || x == 46
+  needsNoEscaping Proxy _ x = isAlphaNum x || x == 43 || x == 45 || x == 46
 
 instance RLabel 'Host where
-  needsNoEscaping Proxy x = isUnreserved x || isDelim x
+  needsNoEscaping Proxy _ x = isUnreserved x || isDelim x
   skipEscaping Proxy x = T.take 1 x == "["
 
 instance RLabel 'Username where
-  needsNoEscaping Proxy x = isUnreserved x || isDelim x
+  needsNoEscaping Proxy _ x = isUnreserved x || isDelim x
 
 instance RLabel 'Password where
-  needsNoEscaping Proxy x = isUnreserved x || isDelim x || x == 58
+  needsNoEscaping Proxy _ x = isUnreserved x || isDelim x || x == 58
 
 instance RLabel 'PathPiece where
-  needsNoEscaping Proxy x =
-    isUnreserved x
+  needsNoEscaping Proxy mscheme x =
+    case mscheme of
+      Nothing -> commonCase
+      Just scheme ->
+        if unRText scheme == "mailto"
+          then commonCase || x == 64
+          else commonCase
+    where
+      commonCase = isUnreserved x
 
 instance RLabel 'QueryKey where
-  needsNoEscaping Proxy x =
+  needsNoEscaping Proxy _ x =
     isPChar isDelim' x || x == 47 || x == 63
   spaceAsPlus Proxy = True
 
 instance RLabel 'QueryValue where
-  needsNoEscaping Proxy x =
+  needsNoEscaping Proxy _ x =
     isPChar isDelim' x || x == 47 || x == 63
   spaceAsPlus Proxy = True
 
 instance RLabel 'Fragment where
-  needsNoEscaping Proxy x =
+  needsNoEscaping Proxy _ x =
     isPChar isDelim x || x == 47 || x == 63
 
 isPChar :: (Word8 -> Bool) -> Word8 -> Bool
