@@ -65,13 +65,13 @@ spec = do
     context "when given URI already has scheme" $
       it "returns that URI unchanged" $
         property $ \scheme uri ->
-          isJust (uriScheme uri)
-            ==> uriScheme (URI.makeAbsolute scheme uri) `shouldBe` uriScheme uri
+          isJust (uriScheme uri) ==>
+            uriScheme (URI.makeAbsolute scheme uri) `shouldBe` uriScheme uri
     context "when given URI has no scheme" $
       it "sets the specified scheme" $
         property $ \scheme uri ->
-          isNothing (uriScheme uri)
-            ==> uriScheme (URI.makeAbsolute scheme uri) `shouldBe` Just scheme
+          isNothing (uriScheme uri) ==>
+            uriScheme (URI.makeAbsolute scheme uri) `shouldBe` Just scheme
   describe "isPathAbsolute" $ do
     context "when URI has authority component" $
       it "returns True" $
@@ -337,8 +337,8 @@ spec = do
     context "when base URI has no scheme" $
       it "returns Nothing" $
         property $ \reference base ->
-          isNothing (uriScheme base)
-            ==> URI.relativeTo reference base `shouldBe` Nothing
+          isNothing (uriScheme base) ==>
+            URI.relativeTo reference base `shouldBe` Nothing
     context "when base URI has scheme" $
       it "the resulting URI always has scheme" $
         property $ \reference base ->
