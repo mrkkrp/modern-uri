@@ -100,7 +100,7 @@ benchmark bench-speed
     build-depends:
         base >=4.13 && <5.0,
         bytestring >=0.2 && <0.12,
-        criterion >=0.6.2.1 && <1.6,
+        criterion >=0.6.2.1 && <1.7,
         megaparsec >=8.0 && <10.0,
         modern-uri,
         text >=0.2 && <2.1
