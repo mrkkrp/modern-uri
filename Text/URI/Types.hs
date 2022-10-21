@@ -58,6 +58,7 @@ import Data.ByteString (ByteString)
 import Data.Char
 import Data.Data (Data)
 import Data.Either (fromLeft)
+import Data.Hashable (Hashable)
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
@@ -106,6 +107,9 @@ data URI = URI
     uriFragment :: Maybe (RText 'Fragment)
   }
   deriving (Show, Eq, Ord, Data, Typeable, Generic)
+
+-- | @since 0.3.5.0
+instance Hashable URI
 
 instance Arbitrary URI where
   arbitrary =
@@ -158,6 +162,9 @@ data Authority = Authority
   }
   deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
+-- | @since 0.3.5.0
+instance Hashable Authority
+
 instance Arbitrary Authority where
   arbitrary =
     Authority
@@ -187,6 +194,9 @@ data UserInfo = UserInfo
   }
   deriving (Show, Eq, Ord, Data, Typeable, Generic)
 
+-- | @since 0.3.5.0
+instance Hashable UserInfo
+
 instance Arbitrary UserInfo where
   arbitrary =
     UserInfo
@@ -213,6 +223,9 @@ data QueryParam
   | -- | Key–value pair
     QueryParam (RText 'QueryKey) (RText 'QueryValue)
   deriving (Show, Eq, Ord, Data, Typeable, Generic)
+
+-- | @since 0.3.5.0
+instance Hashable QueryParam
 
 instance Arbitrary QueryParam where
   arbitrary =
@@ -265,6 +278,9 @@ instance NFData ParseExceptionBs
 -- | Refined text labelled at the type level.
 newtype RText (l :: RTextLabel) = RText Text
   deriving (Eq, Ord, Data, Typeable, Generic)
+
+-- | @since 0.3.5.0
+instance Hashable (RText l)
 
 instance Show (RText l) where
   show (RText txt) = show txt

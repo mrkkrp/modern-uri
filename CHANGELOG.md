@@ -1,3 +1,8 @@
+## Modern URI 0.3.5.0
+
+* Added `Hashable` instances for `URI`, `Authority`, `UserInfo`,
+  `QueryParam`, `RText`.
+
 ## Modern URI 0.3.4.4
 
 * The `mailto` scheme does not escape `@` in its paths (fixes the regression
