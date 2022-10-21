@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -8,7 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TupleSections #-}
 
 -- |
@@ -129,12 +128,7 @@ instance NFData URI
 -- | @since 0.3.1.0
 instance TH.Lift URI where
   lift = liftData
-
-#if MIN_VERSION_template_haskell(2,17,0)
   liftTyped = TH.Code . TH.unsafeTExpCoerce . TH.lift
-#elif MIN_VERSION_template_haskell(2,16,0)
-  liftTyped = TH.unsafeTExpCoerce . TH.lift
-#endif
 
 -- | Make a given 'URI' reference absolute using the supplied @'RText'
 -- 'Scheme'@ if necessary.
@@ -177,12 +171,7 @@ instance NFData Authority
 -- | @since 0.3.1.0
 instance TH.Lift Authority where
   lift = liftData
-
-#if MIN_VERSION_template_haskell(2,17,0)
   liftTyped = TH.Code . TH.unsafeTExpCoerce . TH.lift
-#elif MIN_VERSION_template_haskell(2,16,0)
-  liftTyped = TH.unsafeTExpCoerce . TH.lift
-#endif
 
 -- | User info as a combination of username and password.
 data UserInfo = UserInfo
@@ -208,12 +197,7 @@ instance NFData UserInfo
 -- | @since 0.3.1.0
 instance TH.Lift UserInfo where
   lift = liftData
-
-#if MIN_VERSION_template_haskell(2,17,0)
   liftTyped = TH.Code . TH.unsafeTExpCoerce . TH.lift
-#elif MIN_VERSION_template_haskell(2,16,0)
-  liftTyped = TH.unsafeTExpCoerce . TH.lift
-#endif
 
 -- | Query parameter either in the form of flag or as a pair of key and
 -- value. A key cannot be empty, while a value can.
@@ -239,12 +223,7 @@ instance NFData QueryParam
 -- | @since 0.3.1.0
 instance TH.Lift QueryParam where
   lift = liftData
-
-#if MIN_VERSION_template_haskell(2,17,0)
   liftTyped = TH.Code . TH.unsafeTExpCoerce . TH.lift
-#elif MIN_VERSION_template_haskell(2,16,0)
-  liftTyped = TH.unsafeTExpCoerce . TH.lift
-#endif
 
 -- | Parse exception thrown by 'mkURI' when a given 'Text' value cannot be
 -- parsed as a 'URI'.
@@ -290,12 +269,7 @@ instance NFData (RText l)
 -- | @since 0.3.1.0
 instance Typeable l => TH.Lift (RText l) where
   lift = liftData
-
-#if MIN_VERSION_template_haskell(2,17,0)
   liftTyped = TH.Code . TH.unsafeTExpCoerce . TH.lift
-#elif MIN_VERSION_template_haskell(2,16,0)
-  liftTyped = TH.unsafeTExpCoerce . TH.lift
-#endif
 
 -- | Refined text labels.
 data RTextLabel
@@ -574,20 +548,8 @@ arbText' f = fromJust . f . T.pack <$> listOf1 arbitrary
 ----------------------------------------------------------------------------
 -- TH lifting helpers
 
-liftData
-
-#if MIN_VERSION_template_haskell(2,17,0)
-  :: (Data a, TH.Quote m) => a -> m TH.Exp
-#else
-  :: Data a => a -> TH.Q TH.Exp
-#endif
+liftData :: (Data a, TH.Quote m) => a -> m TH.Exp
 liftData = TH.dataToExpQ (fmap liftText . cast)
 
-liftText
-
-#if MIN_VERSION_template_haskell(2,17,0)
-  :: TH.Quote m => Text -> m TH.Exp
-#else
-  :: Text -> TH.Q TH.Exp
-#endif
+liftText :: TH.Quote m => Text -> m TH.Exp
 liftText t = TH.AppE (TH.VarE 'T.pack) <$> TH.lift (T.unpack t)
