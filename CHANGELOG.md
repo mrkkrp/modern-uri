@@ -1,3 +1,11 @@
+## 0.3.6.0
+
+* Now colons are not escaped in paths, unless the `URI` in question is a
+  URI-reference, in which case colons in the first path segment are escaped.
+  See [RFC 3986, section
+  3.3](https://www.rfc-editor.org/rfc/rfc3986#section-3.3). [Issue
+  55](https://github.com/mrkkrp/modern-uri/issues/55).
+
 ## Modern URI 0.3.5.0
 
 * Added `Hashable` instances for `URI`, `Authority`, `UserInfo`,

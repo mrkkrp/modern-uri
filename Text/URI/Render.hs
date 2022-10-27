@@ -37,7 +37,6 @@ import Data.Char (chr, intToDigit)
 import Data.Kind (Type)
 import Data.List (intersperse)
 import Data.List.NonEmpty (NonEmpty (..))
-import qualified Data.List.NonEmpty as NE
 import Data.Proxy
 import Data.Reflection
 import qualified Data.Semigroup as S
@@ -65,7 +64,14 @@ render' :: URI -> TLB.Builder
 render' x =
   equip
     TLB.decimal
-    (TLB.fromText . percentEncode (uriScheme x))
+    ( \mw r ->
+        TLB.fromText
+          ( percentEncode
+              (uriScheme x)
+              (mediateExtraEscaping x mw)
+              r
+          )
+    )
     (genericRender x)
 
 -- | Render a given 'URI' value as a strict 'ByteString'.
@@ -77,7 +83,16 @@ renderBs' :: URI -> BB.Builder
 renderBs' x =
   equip
     BB.wordDec
-    (BB.byteString . TE.encodeUtf8 . percentEncode (uriScheme x))
+    ( \mw r ->
+        BB.byteString
+          ( TE.encodeUtf8
+              ( percentEncode
+                  (uriScheme x)
+                  (mediateExtraEscaping x mw)
+                  r
+              )
+          )
+    )
     (genericRender x)
 
 -- | Render a given 'URI' value as a 'String'.
@@ -94,21 +109,38 @@ renderStr' x =
   toShowS $
     equip
       (DString . showInt)
-      (fromString . T.unpack . percentEncode (uriScheme x))
+      ( \mw r ->
+          fromString
+            ( T.unpack
+                ( percentEncode
+                    (uriScheme x)
+                    (mediateExtraEscaping x mw)
+                    r
+                )
+            )
+      )
       (genericRender x)
+
+-- | This is a (slightly hackish) way used to only escape ':' in the first
+-- path segment and only if there no scheme and no authority component.
+mediateExtraEscaping :: URI -> Maybe Word8 -> Maybe Word8
+mediateExtraEscaping uri mw =
+  case (uriScheme uri, uriAuthority uri) of
+    (Nothing, Left _) -> mw
+    _ -> Nothing
 
 ----------------------------------------------------------------------------
 -- Reflection stuff
 
 data Renders b = Renders
   { rWord :: Word -> b,
-    rText :: forall l. RLabel l => RText l -> b
+    rText :: forall l. RLabel l => Maybe Word8 -> RText l -> b
   }
 
 equip ::
   forall b.
   (Word -> b) ->
-  (forall l. RLabel l => RText l -> b) ->
+  (forall l. RLabel l => Maybe Word8 -> RText l -> b) ->
   (forall (s :: Type). Reifies s (Renders b) => Tagged s b) ->
   b
 equip rWord rText f = reify Renders {..} $ \(Proxy :: Proxy s') ->
@@ -126,7 +158,15 @@ renderText ::
   (Reifies s (Renders b), RLabel l) =>
   RText l ->
   Tagged s b
-renderText = Tagged . rText (reflect (Proxy :: Proxy s))
+renderText = Tagged . rText (reflect (Proxy :: Proxy s)) Nothing
+
+renderTextEscaping ::
+  forall s b l.
+  (Reifies s (Renders b), RLabel l) =>
+  Word8 ->
+  RText l ->
+  Tagged s b
+renderTextEscaping w = Tagged . rText (reflect (Proxy :: Proxy s)) (Just w)
 
 ----------------------------------------------------------------------------
 -- Generic render
@@ -188,7 +228,9 @@ rPath path =
   case path of
     Nothing -> mempty
     Just (trailingSlash, ps) ->
-      (mconcat . intersperse "/" . fmap renderText . NE.toList) ps
+      ( mconcat . intersperse "/" $ case ps of
+          (x :| xs) -> renderTextEscaping 58 x : fmap renderText xs
+      )
         <> if trailingSlash then "/" else mempty
 {-# INLINE rPath #-}
 
@@ -232,11 +274,13 @@ percentEncode ::
   RLabel l =>
   -- | Scheme of the URI
   Maybe (RText 'Scheme) ->
+  -- | A byte to additionally escape
+  Maybe Word8 ->
   -- | Input text to encode
   RText l ->
   -- | Percent-encoded text
   Text
-percentEncode mscheme rtxt =
+percentEncode mscheme alsoEscape rtxt =
   if skipEscaping (Proxy :: Proxy l) txt
     then txt
     else T.unfoldr f (TE.encodeUtf8 txt, [])
@@ -256,7 +300,11 @@ percentEncode mscheme rtxt =
     encodeByte x = '%' :| [intToDigit h, intToDigit l]
       where
         (h, l) = fromIntegral x `quotRem` 16
-    nne = needsNoEscaping (Proxy :: Proxy l) mscheme
+    nne w =
+      let normalCase = needsNoEscaping (Proxy :: Proxy l) mscheme w
+       in case alsoEscape of
+            Nothing -> normalCase
+            Just w' -> if w == w' then False else normalCase
     sap = spaceAsPlus (Proxy :: Proxy l)
     txt = unRText rtxt
 {-# INLINE percentEncode #-}
@@ -298,7 +346,7 @@ instance RLabel 'PathPiece where
           then commonCase || x == 64
           else commonCase
     where
-      commonCase = isUnreserved x
+      commonCase = isUnreserved x || x == 58
 
 instance RLabel 'QueryKey where
   needsNoEscaping Proxy _ x =
