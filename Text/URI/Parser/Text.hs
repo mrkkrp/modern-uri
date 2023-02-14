@@ -45,7 +45,7 @@ import Text.URI.Types
 --
 -- This function uses the 'parser' parser under the hood, which you can also
 -- use directly in a Megaparsec parser.
-mkURI :: MonadThrow m => Text -> m URI
+mkURI :: (MonadThrow m) => Text -> m URI
 mkURI input =
   case runParser (parser <* eof :: Parsec Void Text URI) "" input of
     Left b -> throwM (ParseException b)
@@ -53,7 +53,7 @@ mkURI input =
 
 -- | This parser can be used to parse 'URI' from strict 'Text'. Remember to
 -- use a concrete non-polymorphic parser type for efficiency.
-parser :: MonadParsec e Text m => m URI
+parser :: (MonadParsec e Text m) => m URI
 parser = do
   uriScheme <- optional (try pScheme)
   mauth <- optional pAuthority
@@ -65,7 +65,7 @@ parser = do
 {-# INLINEABLE parser #-}
 {-# SPECIALIZE parser :: Parsec Void Text URI #-}
 
-pScheme :: MonadParsec e Text m => m (RText 'Scheme)
+pScheme :: (MonadParsec e Text m) => m (RText 'Scheme)
 pScheme = do
   r <- liftR "scheme" mkScheme $ do
     x <- asciiAlphaChar
@@ -75,7 +75,7 @@ pScheme = do
   return r
 {-# INLINE pScheme #-}
 
-pAuthority :: MonadParsec e Text m => m Authority
+pAuthority :: (MonadParsec e Text m) => m Authority
 pAuthority = do
   void (string "//")
   authUserInfo <- optional pUserInfo
@@ -84,7 +84,7 @@ pAuthority = do
   return Authority {..}
 {-# INLINE pAuthority #-}
 
-pUserInfo :: MonadParsec e Text m => m UserInfo
+pUserInfo :: (MonadParsec e Text m) => m UserInfo
 pUserInfo = try $ do
   uiUsername <-
     liftR
@@ -104,7 +104,7 @@ pUserInfo = try $ do
 {-# INLINE pUserInfo #-}
 
 pPath ::
-  MonadParsec e Text m =>
+  (MonadParsec e Text m) =>
   Bool ->
   m (Bool, Maybe (Bool, NonEmpty (RText 'PathPiece)))
 pPath hasAuth = do
@@ -132,7 +132,7 @@ pPath hasAuth = do
     )
 {-# INLINE pPath #-}
 
-pQuery :: MonadParsec e Text m => m [QueryParam]
+pQuery :: (MonadParsec e Text m) => m [QueryParam]
 pQuery = do
   void (char '?')
   void (optional (char '&'))
@@ -151,7 +151,7 @@ pQuery = do
             )
 {-# INLINE pQuery #-}
 
-pFragment :: MonadParsec e Text m => m (RText 'Fragment)
+pFragment :: (MonadParsec e Text m) => m (RText 'Fragment)
 pFragment = do
   void (char '#')
   liftR
@@ -167,7 +167,7 @@ pFragment = do
 
 -- | Lift a smart constructor that consumes 'Text' into a parser.
 liftR ::
-  MonadParsec e Text m =>
+  (MonadParsec e Text m) =>
   -- | What is being parsed
   String ->
   -- | The smart constructor that produces the result
