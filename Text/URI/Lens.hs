@@ -158,10 +158,10 @@ unRText = to URI.unRText
 -- Helpers
 
 type Lens' s a =
-  forall f. Functor f => (a -> f a) -> s -> f s
+  forall f. (Functor f) => (a -> f a) -> s -> f s
 
 type Traversal' s a =
-  forall f. Applicative f => (a -> f a) -> s -> f s
+  forall f. (Applicative f) => (a -> f a) -> s -> f s
 
 type Getter s a =
   forall f. (Contravariant f, Functor f) => (a -> f a) -> s -> f s

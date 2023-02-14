@@ -36,7 +36,7 @@ import Text.Megaparsec.Char
 
 -- | Parser that can parse host names.
 pHost ::
-  MonadParsec e Text m =>
+  (MonadParsec e Text m) =>
   -- | Demand percent-encoding in reg names
   Bool ->
   m String
@@ -46,7 +46,7 @@ pHost pe =
       regName
     ]
   where
-    asConsumed :: MonadParsec e Text m => m a -> m String
+    asConsumed :: (MonadParsec e Text m) => m a -> m String
     asConsumed p = T.unpack . fst <$> match p
     ipLiteral =
       between (char '[') (char ']') $
@@ -95,23 +95,23 @@ pHost pe =
 {-# INLINEABLE pHost #-}
 
 -- | Parse an ASCII alpha character.
-asciiAlphaChar :: MonadParsec e Text m => m Char
+asciiAlphaChar :: (MonadParsec e Text m) => m Char
 asciiAlphaChar = satisfy isAsciiAlpha <?> "ASCII alpha character"
 {-# INLINE asciiAlphaChar #-}
 
 -- | Parse an ASCII alpha-numeric character.
-asciiAlphaNumChar :: MonadParsec e Text m => m Char
+asciiAlphaNumChar :: (MonadParsec e Text m) => m Char
 asciiAlphaNumChar = satisfy isAsciiAlphaNum <?> "ASCII alpha-numeric character"
 {-# INLINE asciiAlphaNumChar #-}
 
 -- | Parse an unreserved character.
-unreservedChar :: MonadParsec e Text m => m Char
+unreservedChar :: (MonadParsec e Text m) => m Char
 unreservedChar = label "unreserved character" . satisfy $ \x ->
   isAsciiAlphaNum x || x == '-' || x == '.' || x == '_' || x == '~'
 {-# INLINE unreservedChar #-}
 
 -- | Parse a percent-encoded character.
-percentEncChar :: MonadParsec e Text m => m Char
+percentEncChar :: (MonadParsec e Text m) => m Char
 percentEncChar = do
   void (char '%')
   h <- digitToInt <$> hexDigitChar
@@ -120,14 +120,14 @@ percentEncChar = do
 {-# INLINE percentEncChar #-}
 
 -- | Parse a sub-delimiter character.
-subDelimChar :: MonadParsec e Text m => m Char
+subDelimChar :: (MonadParsec e Text m) => m Char
 subDelimChar = oneOf s <?> "sub-delimiter"
   where
     s = E.fromList "!$&'()*+,;="
 {-# INLINE subDelimChar #-}
 
 -- | PCHAR thing from the spec.
-pchar :: MonadParsec e Text m => m Char
+pchar :: (MonadParsec e Text m) => m Char
 pchar =
   choice
     [ unreservedChar,
@@ -139,7 +139,7 @@ pchar =
 {-# INLINE pchar #-}
 
 -- | 'pchar' adjusted for query parsing.
-pchar' :: MonadParsec e Text m => m Char
+pchar' :: (MonadParsec e Text m) => m Char
 pchar' =
   choice
     [ unreservedChar,

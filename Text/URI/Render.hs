@@ -134,21 +134,21 @@ mediateExtraEscaping uri mw =
 
 data Renders b = Renders
   { rWord :: Word -> b,
-    rText :: forall l. RLabel l => Maybe Word8 -> RText l -> b
+    rText :: forall l. (RLabel l) => Maybe Word8 -> RText l -> b
   }
 
 equip ::
   forall b.
   (Word -> b) ->
-  (forall l. RLabel l => Maybe Word8 -> RText l -> b) ->
-  (forall (s :: Type). Reifies s (Renders b) => Tagged s b) ->
+  (forall l. (RLabel l) => Maybe Word8 -> RText l -> b) ->
+  (forall (s :: Type). (Reifies s (Renders b)) => Tagged s b) ->
   b
 equip rWord rText f = reify Renders {..} $ \(Proxy :: Proxy s') ->
   unTagged (f :: Tagged s' b)
 
 renderWord ::
   forall s b.
-  Reifies s (Renders b) =>
+  (Reifies s (Renders b)) =>
   Word ->
   Tagged s b
 renderWord = Tagged . rWord (reflect (Proxy :: Proxy s))
@@ -189,7 +189,7 @@ genericRender URI {..} =
     ]
 {-# INLINE genericRender #-}
 
-rJust :: Monoid m => (a -> m) -> Maybe a -> m
+rJust :: (Monoid m) => (a -> m) -> Maybe a -> m
 rJust = maybe mempty
 
 rScheme :: Render (RText 'Scheme) b
@@ -271,7 +271,7 @@ instance IsString DString where
 -- | Percent-encode a 'Text' value.
 percentEncode ::
   forall l.
-  RLabel l =>
+  (RLabel l) =>
   -- | Scheme of the URI
   Maybe (RText 'Scheme) ->
   -- | A byte to additionally escape

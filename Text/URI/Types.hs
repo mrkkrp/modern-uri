@@ -267,7 +267,7 @@ instance Show (RText l) where
 instance NFData (RText l)
 
 -- | @since 0.3.1.0
-instance Typeable l => TH.Lift (RText l) where
+instance (Typeable l) => TH.Lift (RText l) where
   lift = liftData
   liftTyped = TH.Code . TH.unsafeTExpCoerce . TH.lift
 
@@ -321,7 +321,7 @@ mkRText txt =
 -- converting them to lower case.
 --
 -- See also: <https://tools.ietf.org/html/rfc3986#section-3.1>
-mkScheme :: MonadThrow m => Text -> m (RText 'Scheme)
+mkScheme :: (MonadThrow m) => Text -> m (RText 'Scheme)
 mkScheme = mkRText
 
 instance RLabel 'Scheme where
@@ -346,7 +346,7 @@ instance Arbitrary (RText 'Scheme) where
 -- converting them to lower case.
 --
 -- See also: <https://tools.ietf.org/html/rfc3986#section-3.2.2>
-mkHost :: MonadThrow m => Text -> m (RText 'Host)
+mkHost :: (MonadThrow m) => Text -> m (RText 'Host)
 mkHost = mkRText
 
 instance RLabel 'Host where
@@ -362,7 +362,7 @@ instance Arbitrary (RText 'Host) where
 -- This smart constructor does not perform any sort of normalization.
 --
 -- See also: <https://tools.ietf.org/html/rfc3986#section-3.2.1>
-mkUsername :: MonadThrow m => Text -> m (RText 'Username)
+mkUsername :: (MonadThrow m) => Text -> m (RText 'Username)
 mkUsername = mkRText
 
 instance RLabel 'Username where
@@ -378,7 +378,7 @@ instance Arbitrary (RText 'Username) where
 -- This smart constructor does not perform any sort of normalization.
 --
 -- See also: <https://tools.ietf.org/html/rfc3986#section-3.2.1>
-mkPassword :: MonadThrow m => Text -> m (RText 'Password)
+mkPassword :: (MonadThrow m) => Text -> m (RText 'Password)
 mkPassword = mkRText
 
 instance RLabel 'Password where
@@ -394,7 +394,7 @@ instance Arbitrary (RText 'Password) where
 -- This smart constructor does not perform any sort of normalization.
 --
 -- See also: <https://tools.ietf.org/html/rfc3986#section-3.3>
-mkPathPiece :: MonadThrow m => Text -> m (RText 'PathPiece)
+mkPathPiece :: (MonadThrow m) => Text -> m (RText 'PathPiece)
 mkPathPiece = mkRText
 
 instance RLabel 'PathPiece where
@@ -410,7 +410,7 @@ instance Arbitrary (RText 'PathPiece) where
 -- This smart constructor does not perform any sort of normalization.
 --
 -- See also: <https://tools.ietf.org/html/rfc3986#section-3.4>
-mkQueryKey :: MonadThrow m => Text -> m (RText 'QueryKey)
+mkQueryKey :: (MonadThrow m) => Text -> m (RText 'QueryKey)
 mkQueryKey = mkRText
 
 instance RLabel 'QueryKey where
@@ -426,7 +426,7 @@ instance Arbitrary (RText 'QueryKey) where
 -- This smart constructor does not perform any sort of normalization.
 --
 -- See also: <https://tools.ietf.org/html/rfc3986#section-3.4>
-mkQueryValue :: MonadThrow m => Text -> m (RText 'QueryValue)
+mkQueryValue :: (MonadThrow m) => Text -> m (RText 'QueryValue)
 mkQueryValue = mkRText
 
 instance RLabel 'QueryValue where
@@ -442,7 +442,7 @@ instance Arbitrary (RText 'QueryValue) where
 -- This smart constructor does not perform any sort of normalization.
 --
 -- See also: <https://tools.ietf.org/html/rfc3986#section-3.5>
-mkFragment :: MonadThrow m => Text -> m (RText 'Fragment)
+mkFragment :: (MonadThrow m) => Text -> m (RText 'Fragment)
 mkFragment = mkRText
 
 instance RLabel 'Fragment where
@@ -551,5 +551,5 @@ arbText' f = fromJust . f . T.pack <$> listOf1 arbitrary
 liftData :: (Data a, TH.Quote m) => a -> m TH.Exp
 liftData = TH.dataToExpQ (fmap liftText . cast)
 
-liftText :: TH.Quote m => Text -> m TH.Exp
+liftText :: (TH.Quote m) => Text -> m TH.Exp
 liftText t = TH.AppE (TH.VarE 'T.pack) <$> TH.lift (T.unpack t)

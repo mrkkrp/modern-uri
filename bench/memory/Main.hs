@@ -25,7 +25,7 @@ main = mainWith $ do
 -- Helpers
 
 -- | Test 'URI' as a polymorphic string.
-turiStr :: IsString a => a
+turiStr :: (IsString a) => a
 turiStr = "https://mark:secret@github.com:443/mrkkrp/modern-uri?foo=bar#fragment"
 
 -- | Test 'URI' in parsed form.

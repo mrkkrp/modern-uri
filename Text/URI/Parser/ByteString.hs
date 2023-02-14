@@ -51,7 +51,7 @@ import Text.URI.Types hiding (pHost)
 -- use directly in a Megaparsec parser.
 --
 -- @since 0.3.3.0
-mkURIBs :: MonadThrow m => ByteString -> m URI
+mkURIBs :: (MonadThrow m) => ByteString -> m URI
 mkURIBs input =
   case runParser (parserBs <* eof :: Parsec Void ByteString URI) "" input of
     Left b -> throwM (ParseExceptionBs b)
@@ -61,7 +61,7 @@ mkURIBs input =
 -- Remember to use a concrete non-polymorphic parser type for efficiency.
 --
 -- @since 0.0.2.0
-parserBs :: MonadParsec e ByteString m => m URI
+parserBs :: (MonadParsec e ByteString m) => m URI
 parserBs = do
   uriScheme <- optional (try pScheme)
   mauth <- optional pAuthority
@@ -73,7 +73,7 @@ parserBs = do
 {-# INLINEABLE parserBs #-}
 {-# SPECIALIZE parserBs :: Parsec Void ByteString URI #-}
 
-pScheme :: MonadParsec e ByteString m => m (RText 'Scheme)
+pScheme :: (MonadParsec e ByteString m) => m (RText 'Scheme)
 pScheme = do
   r <- liftR "scheme" mkScheme $ do
     x <- asciiAlphaChar
@@ -83,7 +83,7 @@ pScheme = do
   return r
 {-# INLINE pScheme #-}
 
-pAuthority :: MonadParsec e ByteString m => m Authority
+pAuthority :: (MonadParsec e ByteString m) => m Authority
 pAuthority = do
   void (string "//")
   authUserInfo <- optional pUserInfo
@@ -93,7 +93,7 @@ pAuthority = do
 {-# INLINE pAuthority #-}
 
 -- | Parser that can parse host names.
-pHost :: MonadParsec e ByteString m => m [Word8]
+pHost :: (MonadParsec e ByteString m) => m [Word8]
 pHost =
   choice
     [ try (asConsumed ipLiteral),
@@ -101,7 +101,7 @@ pHost =
       regName
     ]
   where
-    asConsumed :: MonadParsec e ByteString m => m a -> m [Word8]
+    asConsumed :: (MonadParsec e ByteString m) => m a -> m [Word8]
     asConsumed p = B.unpack . fst <$> match p
     ipLiteral =
       between (char 91) (char 93) $
@@ -155,7 +155,7 @@ pHost =
           xs <- many r
           return (x : xs)
 
-pUserInfo :: MonadParsec e ByteString m => m UserInfo
+pUserInfo :: (MonadParsec e ByteString m) => m UserInfo
 pUserInfo = try $ do
   uiUsername <-
     liftR
@@ -175,7 +175,7 @@ pUserInfo = try $ do
 {-# INLINE pUserInfo #-}
 
 pPath ::
-  MonadParsec e ByteString m =>
+  (MonadParsec e ByteString m) =>
   Bool ->
   m (Bool, Maybe (Bool, NonEmpty (RText 'PathPiece)))
 pPath hasAuth = do
@@ -203,7 +203,7 @@ pPath hasAuth = do
     )
 {-# INLINE pPath #-}
 
-pQuery :: MonadParsec e ByteString m => m [QueryParam]
+pQuery :: (MonadParsec e ByteString m) => m [QueryParam]
 pQuery = do
   void (char 63)
   void (optional (char 38))
@@ -222,7 +222,7 @@ pQuery = do
             )
 {-# INLINE pQuery #-}
 
-pFragment :: MonadParsec e ByteString m => m (RText 'Fragment)
+pFragment :: (MonadParsec e ByteString m) => m (RText 'Fragment)
 pFragment = do
   void (char 35)
   liftR
@@ -238,7 +238,7 @@ pFragment = do
 
 -- | Lift a smart constructor that consumes 'Text' into a parser.
 liftR ::
-  MonadParsec e ByteString m =>
+  (MonadParsec e ByteString m) =>
   -- | What is being parsed
   String ->
   -- | The smart constructor that produces the result
@@ -263,20 +263,20 @@ liftR lbl f p = do
     Right text -> maybe empty return (f text)
 {-# INLINE liftR #-}
 
-asciiAlphaChar :: MonadParsec e ByteString m => m Word8
+asciiAlphaChar :: (MonadParsec e ByteString m) => m Word8
 asciiAlphaChar = satisfy isAsciiAlpha <?> "ASCII alpha character"
 {-# INLINE asciiAlphaChar #-}
 
-asciiAlphaNumChar :: MonadParsec e ByteString m => m Word8
+asciiAlphaNumChar :: (MonadParsec e ByteString m) => m Word8
 asciiAlphaNumChar = satisfy isAsciiAlphaNum <?> "ASCII alpha-numeric character"
 {-# INLINE asciiAlphaNumChar #-}
 
-unreservedChar :: MonadParsec e ByteString m => m Word8
+unreservedChar :: (MonadParsec e ByteString m) => m Word8
 unreservedChar = label "unreserved character" . satisfy $ \x ->
   isAsciiAlphaNum x || x == 45 || x == 46 || x == 95 || x == 126
 {-# INLINE unreservedChar #-}
 
-percentEncChar :: MonadParsec e ByteString m => m Word8
+percentEncChar :: (MonadParsec e ByteString m) => m Word8
 percentEncChar = do
   void (char 37)
   h <- restoreDigit <$> hexDigitChar
@@ -284,13 +284,13 @@ percentEncChar = do
   return (h * 16 + l)
 {-# INLINE percentEncChar #-}
 
-subDelimChar :: MonadParsec e ByteString m => m Word8
+subDelimChar :: (MonadParsec e ByteString m) => m Word8
 subDelimChar = oneOf s <?> "sub-delimiter"
   where
     s = E.fromList (fromIntegral . ord <$> "!$&'()*+,;=")
 {-# INLINE subDelimChar #-}
 
-pchar :: MonadParsec e ByteString m => m Word8
+pchar :: (MonadParsec e ByteString m) => m Word8
 pchar =
   choice
     [ unreservedChar,
@@ -301,7 +301,7 @@ pchar =
     ]
 {-# INLINE pchar #-}
 
-pchar' :: MonadParsec e ByteString m => m Word8
+pchar' :: (MonadParsec e ByteString m) => m Word8
 pchar' =
   choice
     [ unreservedChar,
