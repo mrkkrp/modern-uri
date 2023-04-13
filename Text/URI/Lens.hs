@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
@@ -34,7 +35,6 @@ module Text.URI.Lens
   )
 where
 
-import Control.Applicative (liftA2)
 import Data.Foldable (find)
 import Data.Functor.Contravariant
 import qualified Data.List.NonEmpty as NE
@@ -50,6 +50,10 @@ import Text.URI.Types
     UserInfo,
   )
 import qualified Text.URI.Types as URI
+
+#if !MIN_VERSION_base(4,18,0)
+import Control.Applicative (liftA2)
+#endif
 
 -- | 'URI' scheme lens.
 uriScheme :: Lens' URI (Maybe (RText 'Scheme))
