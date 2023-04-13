@@ -6,18 +6,18 @@ module Text.URISpec (spec) where
 import Control.Monad
 import Data.ByteString (ByteString)
 import Data.List.NonEmpty (NonEmpty (..))
-import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty qualified as NE
 import Data.Maybe (isJust, isNothing)
 import Data.String (IsString (..))
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Void
 import Test.Hspec
 import Test.Hspec.Megaparsec
 import Test.QuickCheck
 import Text.Megaparsec
 import Text.URI (RTextException (..), RTextLabel (..), URI (..))
-import qualified Text.URI as URI
+import Text.URI qualified as URI
 
 instance Arbitrary Text where
   arbitrary = T.pack <$> arbitrary
