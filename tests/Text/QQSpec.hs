@@ -1,14 +1,13 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Text.QQSpec (spec) where
 
 import Test.Hspec
 import Text.URI
-import qualified Text.URI.QQ as QQ
+import Text.URI.QQ qualified as QQ
 
 spec :: Spec
 spec = do

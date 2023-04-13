@@ -10,7 +10,7 @@ import Data.Text (Text)
 import Data.Void
 import Text.Megaparsec
 import Text.URI (URI)
-import qualified Text.URI as URI
+import Text.URI qualified as URI
 
 main :: IO ()
 main =
