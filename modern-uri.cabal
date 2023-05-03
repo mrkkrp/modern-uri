@@ -53,7 +53,7 @@ library
         profunctors >=5.2.1 && <6.0,
         reflection >=2.0 && <3.0,
         tagged >=0.8 && <0.9,
-        template-haskell >=2.10 && <2.20,
+        template-haskell >=2.10 && <2.21,
         text >=0.2 && <2.1
 
     if flag(dev)
