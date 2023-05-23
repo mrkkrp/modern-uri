@@ -291,11 +291,11 @@ percentEncode mscheme alsoEscape rtxt =
         Just (w, bs'') ->
           Just $
             if
-                | sap && w == 32 -> ('+', (bs'', []))
-                | nne w -> (chr (fromIntegral w), (bs'', []))
-                | otherwise ->
-                    let c :| cs = encodeByte w
-                     in (c, (bs'', cs))
+              | sap && w == 32 -> ('+', (bs'', []))
+              | nne w -> (chr (fromIntegral w), (bs'', []))
+              | otherwise ->
+                  let c :| cs = encodeByte w
+                   in (c, (bs'', cs))
     f (bs', x : xs) = Just (x, (bs', xs))
     encodeByte x = '%' :| [intToDigit h, intToDigit l]
       where
