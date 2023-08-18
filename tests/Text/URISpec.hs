@@ -140,6 +140,8 @@ spec = do
       URI.mkHost "104.155.144.4.sslip.io" `shouldRText` "104.155.144.4.sslip.io"
       URI.mkHost "юникод.рф" `shouldRText` "юникод.рф"
       URI.mkHost "" `shouldRText` ""
+      URI.mkHost "." `shouldRText` "."
+      URI.mkHost "my-host." `shouldRText` "my-host."
       URI.mkHost "auth_service" `shouldRText` "auth_service"
     it "rejects invalid hosts" $ do
       URI.mkHost ")something"
@@ -293,7 +295,6 @@ spec = do
           ( mconcat
               [ utoks "foo%f0bar",
                 etok '%',
-                etok '-',
                 etok '.',
                 elabel "unreserved character",
                 elabel "host that can be decoded as UTF-8"

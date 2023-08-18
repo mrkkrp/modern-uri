@@ -78,20 +78,10 @@ pHost pe =
       void (char '.')
       skipSome (unreservedChar <|> subDelimChar <|> char ':')
     regName = fmap (intercalate ".") . flip sepBy1 (char '.') $ do
-      let ch =
-            if pe
-              then percentEncChar <|> unreservedChar
-              else unreservedCharUnicode
-      mx <- optional ch
-      case mx of
-        Nothing -> return ""
-        Just x -> do
-          let r =
-                ch
-                  <|> try
-                    (char '-' <* (lookAhead . try) (ch <|> char '-'))
-          xs <- many r
-          return (x : xs)
+      many $
+        if pe
+          then percentEncChar <|> unreservedChar
+          else unreservedCharUnicode
 {-# INLINEABLE pHost #-}
 
 -- | Parse an ASCII alpha character.
