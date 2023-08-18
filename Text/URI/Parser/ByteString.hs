@@ -143,7 +143,7 @@ pHost =
       void (char 46)
       skipSome (unreservedChar <|> subDelimChar <|> char 58)
     regName = fmap (intercalate [46]) . flip sepBy1 (char 46) $ do
-      let ch = percentEncChar <|> asciiAlphaNumChar
+      let ch = percentEncChar <|> unreservedChar
       mx <- optional ch
       case mx of
         Nothing -> return []

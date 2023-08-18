@@ -526,7 +526,7 @@ arbHost =
             ]
       return ("v" ++ [v] ++ "." ++ xs)
     domainLabel = do
-      let g = arbitrary `suchThat` isAlphaNum
+      let g = arbitrary `suchThat` isUnreservedChar
       x <- g
       xs <-
         listOf $
@@ -534,6 +534,11 @@ arbHost =
       x' <- g
       return ([x] ++ xs ++ [x'])
     regName = intercalate "." <$> resize 5 (listOf1 domainLabel)
+
+-- | Return 'True' if the given character is unreserved.
+isUnreservedChar :: Char -> Bool
+isUnreservedChar x =
+  isAlphaNum x || x == '-' || x == '.' || x == '_' || x == '~'
 
 -- | Make generator for refined text given how to lift a possibly empty
 -- arbitrary 'Text' value into a refined type.

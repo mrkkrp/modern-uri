@@ -1,3 +1,9 @@
+## 0.3.6.1
+
+* Host now can contain unreserved characters rather than simply alpha
+  numeric ones, which was against RFC 3986. [Issue
+  73](https://github.com/mrkkrp/modern-uri/issues/73).
+
 ## 0.3.6.0
 
 * Now colons are not escaped in paths, unless the `URI` in question is a
