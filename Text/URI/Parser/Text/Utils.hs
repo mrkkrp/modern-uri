@@ -80,8 +80,8 @@ pHost pe =
     regName = fmap (intercalate ".") . flip sepBy1 (char '.') $ do
       let ch =
             if pe
-              then percentEncChar <|> asciiAlphaNumChar
-              else alphaNumChar
+              then percentEncChar <|> unreservedChar
+              else unreservedCharUnicode
       mx <- optional ch
       case mx of
         Nothing -> return ""
@@ -109,6 +109,12 @@ unreservedChar :: (MonadParsec e Text m) => m Char
 unreservedChar = label "unreserved character" . satisfy $ \x ->
   isAsciiAlphaNum x || x == '-' || x == '.' || x == '_' || x == '~'
 {-# INLINE unreservedChar #-}
+
+-- | Parse an unreserved character allowing Unicode.
+unreservedCharUnicode :: (MonadParsec e Text m) => m Char
+unreservedCharUnicode = label "unreserved character" . satisfy $ \x ->
+  isAlphaNum x || x == '-' || x == '.' || x == '_' || x == '~'
+{-# INLINE unreservedCharUnicode #-}
 
 -- | Parse a percent-encoded character.
 percentEncChar :: (MonadParsec e Text m) => m Char

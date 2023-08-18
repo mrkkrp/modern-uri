@@ -28,6 +28,24 @@ spec = do
     it "accepts valid URIs" $ do
       uri <- mkTestURI
       URI.mkURI testURI `shouldReturn` uri
+    it "accepts a URI with an underscore in host name" $ do
+      scheme <- URI.mkScheme "http"
+      host <- URI.mkHost "auth_service"
+      path <- mapM URI.mkPathPiece ["api", "v1", "users", "validate"]
+      URI.mkURI "http://auth_service:3000/api/v1/users/validate"
+        `shouldReturn` URI
+          { uriScheme = Just scheme,
+            uriAuthority =
+              Right
+                URI.Authority
+                  { URI.authUserInfo = Nothing,
+                    URI.authHost = host,
+                    URI.authPort = Just 3000
+                  },
+            uriPath = Just (False, NE.fromList path),
+            uriQuery = [],
+            uriFragment = Nothing
+          }
     it "rejects invalid URIs" $ do
       let e =
             err 0 . mconcat $
@@ -122,9 +140,10 @@ spec = do
       URI.mkHost "104.155.144.4.sslip.io" `shouldRText` "104.155.144.4.sslip.io"
       URI.mkHost "юникод.рф" `shouldRText` "юникод.рф"
       URI.mkHost "" `shouldRText` ""
+      URI.mkHost "auth_service" `shouldRText` "auth_service"
     it "rejects invalid hosts" $ do
-      URI.mkHost "_something"
-        `shouldThrow` (== RTextException Host "_something")
+      URI.mkHost ")something"
+        `shouldThrow` (== RTextException Host ")something")
       URI.mkHost "some@thing"
         `shouldThrow` (== RTextException Host "some@thing")
   describe "mkUsername" $ do
@@ -204,9 +223,9 @@ spec = do
                 etok ':',
                 etok '?',
                 etok '[',
-                elabel "ASCII alpha-numeric character",
-                elabel "username",
                 elabel "path piece",
+                elabel "unreserved character",
+                elabel "username",
                 eeof
               ]
           )
@@ -276,7 +295,7 @@ spec = do
                 etok '%',
                 etok '-',
                 etok '.',
-                elabel "ASCII alpha-numeric character",
+                elabel "unreserved character",
                 elabel "host that can be decoded as UTF-8"
               ]
           )
