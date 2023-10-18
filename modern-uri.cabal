@@ -5,7 +5,7 @@ license:         BSD-3-Clause
 license-file:    LICENSE.md
 maintainer:      Mark Karpov <markkarpov92@gmail.com>
 author:          Mark Karpov <markkarpov92@gmail.com>
-tested-with:     ghc ==9.2.8 ghc ==9.4.7 ghc ==9.6.2
+tested-with:     ghc ==9.4.7 ghc ==9.6.3 ghc ==9.8.1
 homepage:        https://github.com/mrkkrp/modern-uri
 bug-reports:     https://github.com/mrkkrp/modern-uri/issues
 synopsis:        Modern library for working with URIs
@@ -40,20 +40,20 @@ library
 
     default-language: Haskell2010
     build-depends:
-        QuickCheck >=2.4 && <3.0,
-        base >=4.15 && <5.0,
-        bytestring >=0.2 && <0.12,
+        QuickCheck >=2.4 && <3,
+        base >=4.15 && <5,
+        bytestring >=0.2 && <0.13,
         containers >=0.5 && <0.7,
-        deepseq >=1.3 && <1.5,
+        deepseq >=1.3 && <1.6,
         exceptions >=0.6 && <0.11,
-        hashable >=1.3 && <2.0,
-        megaparsec >=7.0 && <10.0,
-        mtl >=2.0 && <3.0,
-        profunctors >=5.2.1 && <6.0,
-        reflection >=2.0 && <3.0,
+        hashable >=1.3 && <2,
+        megaparsec >=8 && <10,
+        mtl >=2 && <3,
+        profunctors >=5.2.1 && <6,
+        reflection >=2 && <3,
         tagged >=0.8 && <0.9,
-        template-haskell >=2.10 && <2.21,
-        text >=0.2 && <2.1
+        template-haskell >=2.10 && <2.22,
+        text >=0.2 && <2.2
 
     if flag(dev)
         ghc-options: -Wall -Werror -Wpartial-fields -Wunused-packages
@@ -64,7 +64,7 @@ library
 test-suite tests
     type:               exitcode-stdio-1.0
     main-is:            Spec.hs
-    build-tool-depends: hspec-discover:hspec-discover >=2.0 && <3.0
+    build-tool-depends: hspec-discover:hspec-discover >=2 && <3
     hs-source-dirs:     tests
     other-modules:
         Text.QQSpec
@@ -72,14 +72,14 @@ test-suite tests
 
     default-language:   GHC2021
     build-depends:
-        QuickCheck >=2.4 && <3.0,
-        base >=4.15 && <5.0,
-        bytestring >=0.2 && <0.12,
-        hspec >=2.0 && <3.0,
-        hspec-megaparsec >=2.0 && <3.0,
-        megaparsec >=8.0 && <10.0,
+        QuickCheck >=2.4 && <3,
+        base >=4.15 && <5,
+        bytestring >=0.2 && <0.13,
+        hspec >=2 && <3,
+        hspec-megaparsec >=2 && <3,
+        megaparsec >=8 && <10,
         modern-uri,
-        text >=0.2 && <2.1
+        text >=0.2 && <2.2
 
     if flag(dev)
         ghc-options:
@@ -96,11 +96,11 @@ benchmark bench-speed
     default-language: GHC2021
     build-depends:
         base >=4.15 && <5.0,
-        bytestring >=0.2 && <0.12,
+        bytestring >=0.2 && <0.13,
         criterion >=0.6.2.1 && <1.7,
-        megaparsec >=8.0 && <10.0,
+        megaparsec >=8 && <10,
         modern-uri,
-        text >=0.2 && <2.1
+        text >=0.2 && <2.2
 
     if flag(dev)
         ghc-options:
@@ -116,11 +116,11 @@ benchmark bench-memory
     hs-source-dirs:   bench/memory
     default-language: GHC2021
     build-depends:
-        base >=4.15 && <5.0,
-        bytestring >=0.2 && <0.12,
-        megaparsec >=8.0 && <10.0,
+        base >=4.15 && <5,
+        bytestring >=0.2 && <0.13,
+        megaparsec >=8 && <10,
         modern-uri,
-        text >=0.2 && <2.1,
+        text >=0.2 && <2.2,
         weigh >=0.0.4
 
     if flag(dev)
