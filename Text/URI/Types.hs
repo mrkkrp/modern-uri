@@ -105,7 +105,7 @@ data URI = URI
     -- | Fragment, without @#@
     uriFragment :: Maybe (RText 'Fragment)
   }
-  deriving (Show, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Eq, Ord, Data, Generic)
 
 -- | @since 0.3.5.0
 instance Hashable URI
@@ -154,7 +154,7 @@ data Authority = Authority
     -- | Port number
     authPort :: Maybe Word
   }
-  deriving (Show, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Eq, Ord, Data, Generic)
 
 -- | @since 0.3.5.0
 instance Hashable Authority
@@ -181,7 +181,7 @@ data UserInfo = UserInfo
     -- user info string
     uiPassword :: Maybe (RText 'Password)
   }
-  deriving (Show, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Eq, Ord, Data, Generic)
 
 -- | @since 0.3.5.0
 instance Hashable UserInfo
@@ -206,7 +206,7 @@ data QueryParam
     QueryFlag (RText 'QueryKey)
   | -- | Key–value pair
     QueryParam (RText 'QueryKey) (RText 'QueryValue)
-  deriving (Show, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Eq, Ord, Data, Generic)
 
 -- | @since 0.3.5.0
 instance Hashable QueryParam
@@ -230,7 +230,7 @@ instance TH.Lift QueryParam where
 newtype ParseException
   = -- | Arguments are: original input and parse error
     ParseException (ParseErrorBundle Text Void)
-  deriving (Show, Eq, Data, Typeable, Generic)
+  deriving (Show, Eq, Data, Generic)
 
 instance Exception ParseException where
   displayException (ParseException b) = errorBundlePretty b
@@ -244,7 +244,7 @@ instance NFData ParseException
 newtype ParseExceptionBs
   = -- | Arguments are: original input and parse error
     ParseExceptionBs (ParseErrorBundle ByteString Void)
-  deriving (Show, Eq, Data, Typeable, Generic)
+  deriving (Show, Eq, Data, Generic)
 
 instance Exception ParseExceptionBs where
   displayException (ParseExceptionBs b) = errorBundlePretty b
@@ -256,7 +256,7 @@ instance NFData ParseExceptionBs
 
 -- | Refined text labelled at the type level.
 newtype RText (l :: RTextLabel) = RText Text
-  deriving (Eq, Ord, Data, Typeable, Generic)
+  deriving (Eq, Ord, Data, Generic)
 
 -- | @since 0.3.5.0
 instance Hashable (RText l)
@@ -289,7 +289,7 @@ data RTextLabel
     QueryValue
   | -- | See 'mkFragment'
     Fragment
-  deriving (Show, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Eq, Ord, Data, Generic)
 
 -- | This type class associates checking, normalization, and a term level
 -- label with a label on the type level.
@@ -463,7 +463,7 @@ data RTextException
   = -- | 'RTextLabel' identifying what sort of refined text value could not be
     -- constructed and the input that was supplied, as a 'Text' value
     RTextException RTextLabel Text
-  deriving (Show, Eq, Ord, Data, Typeable, Generic)
+  deriving (Show, Eq, Ord, Data, Generic)
 
 instance Exception RTextException where
   displayException (RTextException lbl txt) =
