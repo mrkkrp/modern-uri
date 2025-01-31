@@ -4,7 +4,7 @@
 [![Hackage](https://img.shields.io/hackage/v/modern-uri.svg?style=flat)](https://hackage.haskell.org/package/modern-uri)
 [![Stackage Nightly](http://stackage.org/package/modern-uri/badge/nightly)](http://stackage.org/nightly/package/modern-uri)
 [![Stackage LTS](http://stackage.org/package/modern-uri/badge/lts)](http://stackage.org/lts/package/modern-uri)
-![CI](https://github.com/mrkkrp/modern-uri/workflows/CI/badge.svg?branch=master)
+[![CI](https://github.com/mrkkrp/modern-uri/actions/workflows/ci.yaml/badge.svg)](https://github.com/mrkkrp/modern-uri/actions/workflows/ci.yaml)
 
 This is a modern library for working with URIs in Haskell as per RFC 3986:
 
