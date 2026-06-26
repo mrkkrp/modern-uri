@@ -125,6 +125,11 @@ emptyURI =
 --
 -- See also: <https://tools.ietf.org/html/rfc3986#section-5.2>.
 --
+-- ==== __Example__
+-- 
+-- >>> relativeTo <$> mkURI "/the/new/page" <*> mkURI "https://foo.bar/other/page" >>= fmap render
+-- Just "https://foo.bar/the/new/page"
+--
 -- @since 0.2.0.0
 relativeTo ::
   -- | Reference 'URI' to make absolute
