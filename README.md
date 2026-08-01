@@ -19,9 +19,9 @@ The `modern-uri` package features:
   invalid.
 * Textual components in the `URI` data type are represented as `Text` rather
   than `ByteString`, because they are percent-decoded and so they can
-  contain characters outside of ASCII range (i.e. Unicode). This allows for
-  easier manipulation of `URI`s, while encoding and decoding headaches are
-  handled by the parsers and renders for you.
+  contain characters outside of the ASCII range (i.e. Unicode). This allows
+  for easier manipulation of `URI`s, while encoding and decoding headaches
+  are handled by the parsers and renderers for you.
 * Absolute and relative URIs differ only by the scheme component: if it's
   `Nothing`, then the URI is relative, otherwise it's absolute.
 * A Megaparsec parser that can be used as a standalone smart constructor for
@@ -34,8 +34,8 @@ The `modern-uri` package features:
   “normalized by construction” to some extent.
 * Fast rendering to strict `Text` and `ByteString` as well as to their
   respective `Builder` types and to `String`/`ShowS`.
-* Extensive set of lensy helpers for easier manipulation of the nested data
-  types (see `Text.URI.Lens`).
+* An extensive set of lensy helpers for easier manipulation of the nested
+  data types (see `Text.URI.Lens`).
 * Quasi-quoters for compile-time construction of the `URI` data type and
   refined text types (see `Text.URI.QQ`).
 
@@ -87,9 +87,9 @@ constructed by using smart constructors like `mkScheme :: MonadThrow m =>
 Text -> m (RText 'Scheme)`. For example, if argument to `mkScheme` is not a
 valid scheme, an exception will be thrown. Note that monads such as `Maybe`
 are also instances of the `MonadThrow` type class, and so the smart
-constructors can be used in pure environment as well.
+constructors can be used in a pure environment as well.
 
-There is a smart constructor that can make an entire `URI` too, it's called
+There is a smart constructor that can make an entire `URI` too; it's called
 (unsurprisingly) `mkURI`:
 
 ```haskell
@@ -140,8 +140,8 @@ URI
   }
 ```
 
-Note how the value returned by the `url` quasi quote is pure, its
-construction cannot fail because when there is an invalid URI inside the
+Note how the value returned by the `uri` quasi quote is pure; its
+construction cannot fail, because when there is an invalid URI inside the
 quote it's a compilation error. The `Text.URI.QQ` module has quasi-quoters
 for scheme, host, and other components.
 
@@ -224,4 +224,4 @@ Pull requests are also welcome.
 
 Copyright © 2017–present Mark Karpov
 
-Distributed under BSD 3 clause license.
+Distributed under the BSD 3-clause license.

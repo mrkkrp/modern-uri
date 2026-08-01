@@ -13,7 +13,7 @@
 -- Stability   :  experimental
 -- Portability :  portable
 --
--- URI parser for string 'ByteString', an internal module.
+-- URI parser for strict 'ByteString', an internal module.
 module Text.URI.Parser.ByteString
   ( mkURIBs,
     parserBs,

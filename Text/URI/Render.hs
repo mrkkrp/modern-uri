@@ -18,7 +18,7 @@
 -- Stability   :  experimental
 -- Portability :  portable
 --
--- URI renders, an internal module.
+-- URI renderers, an internal module.
 module Text.URI.Render
   ( render,
     render',
@@ -122,7 +122,7 @@ renderStr' x =
       (genericRender x)
 
 -- | This is a (slightly hackish) way used to only escape ':' in the first
--- path segment and only if there no scheme and no authority component.
+-- path segment and only if there is no scheme and no authority component.
 mediateExtraEscaping :: URI -> Maybe Word8 -> Maybe Word8
 mediateExtraEscaping uri mw =
   case (uriScheme uri, uriAuthority uri) of
@@ -312,7 +312,7 @@ percentEncode mscheme alsoEscape rtxt =
 -- | This type class attaches some predicates that control serialization to
 -- the type level label of kind 'RTextLabel'.
 class RLabel (l :: RTextLabel) where
-  -- | The predicate selects bytes that are not to be percent-escaped in
+  -- | The predicate selects bytes that are not to be percent-escaped in the
   -- rendered URI.
   needsNoEscaping :: Proxy l -> Maybe (RText 'Scheme) -> Word8 -> Bool
 

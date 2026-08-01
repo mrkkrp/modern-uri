@@ -66,7 +66,7 @@ pathPiece = liftToQQ mkPathPiece
 queryKey :: QuasiQuoter
 queryKey = liftToQQ mkQueryKey
 
--- | Construct a @'RText 'QueryValue'@ value at compile time.
+-- | Construct a @'RText' 'QueryValue'@ value at compile time.
 queryValue :: QuasiQuoter
 queryValue = liftToQQ mkQueryValue
 

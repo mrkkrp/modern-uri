@@ -61,7 +61,7 @@ uriScheme f s = (\x -> s {URI.uriScheme = x}) <$> f (URI.uriScheme s)
 
 -- | 'URI' authority lens.
 --
--- __Note__: before version /0.1.0.0/ this lens allowed to focus on @'Maybe'
+-- __Note__: before version /0.1.0.0/ this lens allowed focusing on @'Maybe'
 -- 'URI.Authority'@.
 uriAuthority :: Lens' URI (Either Bool URI.Authority)
 uriAuthority f s = (\x -> s {URI.uriAuthority = x}) <$> f (URI.uriAuthority s)
@@ -74,13 +74,13 @@ uriPath f s = (\x -> s {URI.uriPath = (ts,) <$> NE.nonEmpty x}) <$> f ps
     ps = maybe [] (NE.toList . snd) path
     path = URI.uriPath s
 
--- | A getter that can tell if path component of a 'URI' is absolute.
+-- | A getter that can tell if the path component of a 'URI' is absolute.
 --
 -- @since 0.1.0.0
 isPathAbsolute :: Getter URI Bool
 isPathAbsolute = to URI.isPathAbsolute
 
--- | A 0-1 traversal allowing to view and manipulate trailing slash.
+-- | A 0-1 traversal allowing one to view and manipulate the trailing slash.
 --
 -- @since 0.2.0.0
 uriTrailingSlash :: Traversal' URI Bool
@@ -183,6 +183,6 @@ prism bt seta = dimap seta (either pure (fmap bt)) . right'
 prism' :: (b -> s) -> (s -> Maybe a) -> Prism s s a b
 prism' bs sma = prism bs (\s -> maybe (Left s) Right (sma s))
 
--- | Lift a function into optic.
+-- | Lift a function into an optic.
 to :: (Profunctor p, Contravariant f) => (s -> a) -> (p a (f a) -> p s (f s))
 to f = dimap f (contramap f)

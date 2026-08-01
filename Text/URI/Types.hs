@@ -100,7 +100,7 @@ data URI = URI
     -- 'PathPiece']@.
     uriPath :: Maybe (Bool, NonEmpty (RText 'PathPiece)),
     -- | Query parameters, RFC 3986 does not define the inner organization
-    -- of query string, so we deconstruct it following RFC 1866 here
+    -- of the query string, so we deconstruct it following RFC 1866 here
     uriQuery :: [QueryParam],
     -- | Fragment, without @#@
     uriFragment :: Maybe (RText 'Fragment)
@@ -139,7 +139,7 @@ makeAbsolute scheme URI {..} =
       ..
     }
 
--- | Return 'True' if path in a given 'URI' is absolute.
+-- | Return 'True' if the path in a given 'URI' is absolute.
 --
 -- @since 0.1.0.0
 isPathAbsolute :: URI -> Bool
@@ -405,7 +405,7 @@ instance RLabel 'PathPiece where
 instance Arbitrary (RText 'PathPiece) where
   arbitrary = arbText' mkPathPiece
 
--- | Lift a 'Text' value into @'RText 'QueryKey'@.
+-- | Lift a 'Text' value into @'RText' 'QueryKey'@.
 --
 -- This smart constructor does not perform any sort of normalization.
 --
@@ -458,7 +458,7 @@ unRText :: RText l -> Text
 unRText (RText txt) = txt
 
 -- | The exception is thrown when a refined @'RText' l@ value cannot be
--- constructed due to the fact that given 'Text' value is not correct.
+-- constructed because the given 'Text' value is not correct.
 data RTextException
   = -- | 'RTextLabel' identifying what sort of refined text value could not be
     -- constructed and the input that was supplied, as a 'Text' value
@@ -475,7 +475,7 @@ instance Exception RTextException where
 ----------------------------------------------------------------------------
 -- Parser helpers
 
--- | Return 'True' if given parser can consume 'Text' in its entirety.
+-- | Return 'True' if the given parser can consume 'Text' in its entirety.
 ifMatches :: Parsec Void Text () -> Text -> Bool
 ifMatches p = isJust . parseMaybe p
 
@@ -507,7 +507,7 @@ arbHost =
       xs <- oneof [ipv6Address, ipvFuture]
       return ("[" ++ xs ++ "]")
     ipv6Address =
-      -- NOTE We do not mess with zeroes here, because it's a hairy stuff.
+      -- NOTE We do not mess with zeroes here, because it's hairy stuff.
       -- We test how we handle :: thing manually in the test suite.
       intercalate ":" . fmap (`showHex` "")
         <$> vectorOf 8 (arbitrary :: Gen Word16)
@@ -545,7 +545,7 @@ isUnreservedChar x =
 arbText :: (Text -> Maybe (RText l)) -> Gen (RText l)
 arbText f = fromJust . f . T.pack <$> listOf arbitrary
 
--- | Like 'arbText'', but the lifting function will be given non-empty
+-- | Like 'arbText', but the lifting function will be given a non-empty
 -- arbitrary 'Text' value.
 arbText' :: (Text -> Maybe (RText l)) -> Gen (RText l)
 arbText' f = fromJust . f . T.pack <$> listOf1 arbitrary

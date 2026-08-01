@@ -303,14 +303,14 @@ spec = do
   describe "render" $ do
     it "sort of works" $
       fmap URI.render mkTestURI `shouldReturn` testURI
-    context "when URI has scheme" $
-      it "does not escape colon in path components" $
-        (URI.render <$> URI.mkURI "https:/fir:st/se:cond")
-          `shouldReturn` "https:/fir:st/se:cond"
-    context "when URI is a network-path reference" $
-      it "does not escape colon in path components" $
-        (URI.render <$> URI.mkURI "//host/fir:st/se:cond")
-          `shouldReturn` "//host/fir:st/se:cond"
+    context "when URI has scheme"
+      $ it "does not escape colon in path components"
+      $ (URI.render <$> URI.mkURI "https:/fir:st/se:cond")
+        `shouldReturn` "https:/fir:st/se:cond"
+    context "when URI is a network-path reference"
+      $ it "does not escape colon in path components"
+      $ (URI.render <$> URI.mkURI "//host/fir:st/se:cond")
+        `shouldReturn` "//host/fir:st/se:cond"
     context "when URI is a relative-path reference" $
       it "escapes colon but only in the first path segment" $ do
         firstSeg <- URI.mkPathPiece "fir:st"
@@ -330,12 +330,12 @@ spec = do
         let mailtoUri = "mailto:john.smith@example.org"
         uri <- URI.mkURI mailtoUri
         URI.render uri `shouldBe` mailtoUri
-  describe "renderBs" $
-    it "sort of works" $
-      fmap URI.renderBs mkTestURI `shouldReturn` testURI
-  describe "renderStr" $
-    it "sort of works" $
-      fmap URI.renderStr mkTestURI `shouldReturn` testURI
+  describe "renderBs"
+    $ it "sort of works"
+    $ fmap URI.renderBs mkTestURI `shouldReturn` testURI
+  describe "renderStr"
+    $ it "sort of works"
+    $ fmap URI.renderStr mkTestURI `shouldReturn` testURI
   describe "relativeTo" $ do
     let testResolution r e = do
           base <- URI.mkURI "http://a/b/c/d;p?q"
@@ -348,12 +348,12 @@ spec = do
           it ("resolves reference path \"" <> T.unpack r <> "\"") $
             testResolution r e
     context "when reference URI has scheme" $ do
-      context "when the scheme is the same as the scheme of base URI" $
-        it "reference URI is preserved intact" $
-          testResolution "http:g" "http:g"
-      context "when the scheme is different from the scheme of base URI" $
-        it "reference URI is preserved intact" $
-          testResolution "ftp:g" "ftp:g"
+      context "when the scheme is the same as the scheme of base URI"
+        $ it "reference URI is preserved intact"
+        $ testResolution "http:g" "http:g"
+      context "when the scheme is different from the scheme of base URI"
+        $ it "reference URI is preserved intact"
+        $ testResolution "ftp:g" "ftp:g"
     context "when base URI has no scheme" $
       it "returns Nothing" $
         property $ \reference base ->

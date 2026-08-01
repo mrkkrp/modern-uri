@@ -117,7 +117,7 @@ emptyURI =
 -- representation as per RFC 3986, that is, percent-encoding will be applied
 -- when necessary automatically.
 
--- | @'relativeTo' reference base@ makes the @reference@ 'URI' absolute
+-- | @'relativeTo' reference base@ makes the @reference@ 'URI' absolute by
 -- resolving it against the @base@ 'URI'.
 --
 -- If the base 'URI' is not absolute itself (that is, it has no scheme),
