@@ -50,7 +50,6 @@ import Text.URI.Types
     UserInfo,
   )
 import qualified Text.URI.Types as URI
-
 #if !MIN_VERSION_base(4,18,0)
 import Control.Applicative (liftA2)
 #endif
