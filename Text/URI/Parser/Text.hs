@@ -61,7 +61,7 @@ parser = do
   uriQuery <- option [] pQuery
   uriFragment <- optional pFragment
   let uriAuthority = maybe (Left absPath) Right mauth
-  return URI {..}
+  return URI{..}
 {-# INLINEABLE parser #-}
 {-# SPECIALIZE parser :: Parsec Void Text URI #-}
 
@@ -81,7 +81,7 @@ pAuthority = do
   authUserInfo <- optional pUserInfo
   authHost <- liftR "host" mkHost (pHost True)
   authPort <- optional (char ':' *> L.decimal)
-  return Authority {..}
+  return Authority{..}
 {-# INLINE pAuthority #-}
 
 pUserInfo :: (MonadParsec e Text m) => m UserInfo
@@ -100,7 +100,7 @@ pUserInfo = try $ do
       mkPassword
       (many (unreservedChar <|> percentEncChar <|> subDelimChar <|> char ':'))
   void (char '@')
-  return UserInfo {..}
+  return UserInfo{..}
 {-# INLINE pUserInfo #-}
 
 pPath ::

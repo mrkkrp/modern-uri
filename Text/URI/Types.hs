@@ -133,7 +133,7 @@ instance TH.Lift URI where
 -- | Make a given 'URI' reference absolute using the supplied @'RText'
 -- 'Scheme'@ if necessary.
 makeAbsolute :: RText 'Scheme -> URI -> URI
-makeAbsolute scheme URI {..} =
+makeAbsolute scheme URI{..} =
   URI
     { uriScheme = pure (fromMaybe scheme uriScheme),
       ..

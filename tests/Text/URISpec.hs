@@ -94,11 +94,11 @@ spec = do
     context "when URI has authority component" $
       it "returns True" $
         property $ \uri auth ->
-          URI.isPathAbsolute (uri {uriAuthority = Right auth}) `shouldBe` True
+          URI.isPathAbsolute (uri{uriAuthority = Right auth}) `shouldBe` True
     context "when URI has no authority component" $
       it "return what is inside of Left in uriAuthority" $
         property $ \uri b ->
-          URI.isPathAbsolute (uri {uriAuthority = Left b}) `shouldBe` b
+          URI.isPathAbsolute (uri{uriAuthority = Left b}) `shouldBe` b
   describe "mkScheme" $ do
     it "accepts valid schemes" $ do
       URI.mkScheme "http" `shouldRText` "http"

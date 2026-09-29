@@ -139,7 +139,7 @@ relativeTo r base =
     Just bscheme ->
       Just $
         if isJust (uriScheme r)
-          then r {uriPath = uriPath r >>= removeDotSegments}
+          then r{uriPath = uriPath r >>= removeDotSegments}
           else
             r
               { uriScheme = Just bscheme,

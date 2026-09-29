@@ -69,7 +69,7 @@ parserBs = do
   uriQuery <- option [] pQuery
   uriFragment <- optional pFragment
   let uriAuthority = maybe (Left absPath) Right mauth
-  return URI {..}
+  return URI{..}
 {-# INLINEABLE parserBs #-}
 {-# SPECIALIZE parserBs :: Parsec Void ByteString URI #-}
 
@@ -89,7 +89,7 @@ pAuthority = do
   authUserInfo <- optional pUserInfo
   authHost <- liftR "host" mkHost pHost
   authPort <- optional (char 58 *> L.decimal)
-  return Authority {..}
+  return Authority{..}
 {-# INLINE pAuthority #-}
 
 -- | Parser that can parse host names.
@@ -171,7 +171,7 @@ pUserInfo = try $ do
       mkPassword
       (many (unreservedChar <|> percentEncChar <|> subDelimChar <|> char 58))
   void (char 64)
-  return UserInfo {..}
+  return UserInfo{..}
 {-# INLINE pUserInfo #-}
 
 pPath ::

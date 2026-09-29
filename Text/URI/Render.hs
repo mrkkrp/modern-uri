@@ -143,7 +143,7 @@ equip ::
   (forall l. (RLabel l) => Maybe Word8 -> RText l -> b) ->
   (forall (s :: Type). (Reifies s (Renders b)) => Tagged s b) ->
   b
-equip rWord rText f = reify Renders {..} $ \(Proxy :: Proxy s') ->
+equip rWord rText f = reify Renders{..} $ \(Proxy :: Proxy s') ->
   unTagged (f :: Tagged s' b)
 
 renderWord ::
@@ -178,7 +178,7 @@ type Render a b =
   Tagged s b
 
 genericRender :: Render URI b
-genericRender URI {..} =
+genericRender URI{..} =
   mconcat
     [ rJust rScheme uriScheme,
       rJust rAuthority (either (const Nothing) Just uriAuthority),
@@ -197,7 +197,7 @@ rScheme = (<> ":") . renderText
 {-# INLINE rScheme #-}
 
 rAuthority :: Render Authority b
-rAuthority Authority {..} =
+rAuthority Authority{..} =
   mconcat
     [ "//",
       rJust rUserInfo authUserInfo,
@@ -207,7 +207,7 @@ rAuthority Authority {..} =
 {-# INLINE rAuthority #-}
 
 rUserInfo :: Render UserInfo b
-rUserInfo UserInfo {..} =
+rUserInfo UserInfo{..} =
   mconcat
     [ renderText uiUsername,
       rJust ((":" <>) . renderText) uiPassword,
@@ -253,7 +253,7 @@ rFragment = ("#" <>) . renderText
 ----------------------------------------------------------------------------
 -- DString
 
-newtype DString = DString {toShowS :: ShowS}
+newtype DString = DString{toShowS :: ShowS}
 
 instance S.Semigroup DString where
   DString a <> DString b = DString (a . b)

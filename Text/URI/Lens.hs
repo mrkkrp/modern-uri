@@ -56,18 +56,18 @@ import Control.Applicative (liftA2)
 
 -- | 'URI' scheme lens.
 uriScheme :: Lens' URI (Maybe (RText 'Scheme))
-uriScheme f s = (\x -> s {URI.uriScheme = x}) <$> f (URI.uriScheme s)
+uriScheme f s = (\x -> s{URI.uriScheme = x}) <$> f (URI.uriScheme s)
 
 -- | 'URI' authority lens.
 --
 -- __Note__: before version /0.1.0.0/ this lens allowed focusing on @'Maybe'
 -- 'URI.Authority'@.
 uriAuthority :: Lens' URI (Either Bool URI.Authority)
-uriAuthority f s = (\x -> s {URI.uriAuthority = x}) <$> f (URI.uriAuthority s)
+uriAuthority f s = (\x -> s{URI.uriAuthority = x}) <$> f (URI.uriAuthority s)
 
 -- | 'URI' path lens.
 uriPath :: Lens' URI [RText 'PathPiece]
-uriPath f s = (\x -> s {URI.uriPath = (ts,) <$> NE.nonEmpty x}) <$> f ps
+uriPath f s = (\x -> s{URI.uriPath = (ts,) <$> NE.nonEmpty x}) <$> f ps
   where
     ts = maybe False fst path
     ps = maybe [] (NE.toList . snd) path
@@ -84,7 +84,7 @@ isPathAbsolute = to URI.isPathAbsolute
 -- @since 0.2.0.0
 uriTrailingSlash :: Traversal' URI Bool
 uriTrailingSlash f s =
-  (\x -> s {URI.uriPath = liftA2 (,) x ps}) <$> traverse f ts
+  (\x -> s{URI.uriPath = liftA2 (,) x ps}) <$> traverse f ts
   where
     ts = fst <$> path
     ps = snd <$> path
@@ -92,31 +92,31 @@ uriTrailingSlash f s =
 
 -- | 'URI' query params lens.
 uriQuery :: Lens' URI [URI.QueryParam]
-uriQuery f s = (\x -> s {URI.uriQuery = x}) <$> f (URI.uriQuery s)
+uriQuery f s = (\x -> s{URI.uriQuery = x}) <$> f (URI.uriQuery s)
 
 -- | 'URI' fragment lens.
 uriFragment :: Lens' URI (Maybe (RText 'Fragment))
-uriFragment f s = (\x -> s {URI.uriFragment = x}) <$> f (URI.uriFragment s)
+uriFragment f s = (\x -> s{URI.uriFragment = x}) <$> f (URI.uriFragment s)
 
 -- | 'Authority' user info lens.
 authUserInfo :: Lens' Authority (Maybe URI.UserInfo)
-authUserInfo f s = (\x -> s {URI.authUserInfo = x}) <$> f (URI.authUserInfo s)
+authUserInfo f s = (\x -> s{URI.authUserInfo = x}) <$> f (URI.authUserInfo s)
 
 -- | 'Authority' host lens.
 authHost :: Lens' Authority (RText 'Host)
-authHost f s = (\x -> s {URI.authHost = x}) <$> f (URI.authHost s)
+authHost f s = (\x -> s{URI.authHost = x}) <$> f (URI.authHost s)
 
 -- | 'Authority' port lens.
 authPort :: Lens' Authority (Maybe Word)
-authPort f s = (\x -> s {URI.authPort = x}) <$> f (URI.authPort s)
+authPort f s = (\x -> s{URI.authPort = x}) <$> f (URI.authPort s)
 
 -- | 'UserInfo' username lens.
 uiUsername :: Lens' UserInfo (RText 'Username)
-uiUsername f s = (\x -> s {URI.uiUsername = x}) <$> f (URI.uiUsername s)
+uiUsername f s = (\x -> s{URI.uiUsername = x}) <$> f (URI.uiUsername s)
 
 -- | 'UserInfo' password lens.
 uiPassword :: Lens' UserInfo (Maybe (RText 'Password))
-uiPassword f s = (\x -> s {URI.uiPassword = x}) <$> f (URI.uiPassword s)
+uiPassword f s = (\x -> s{URI.uiPassword = x}) <$> f (URI.uiPassword s)
 
 -- | 'QueryParam' prism for query flags.
 _QueryFlag :: Prism' URI.QueryParam (RText 'QueryKey)
